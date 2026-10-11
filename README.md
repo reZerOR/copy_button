@@ -1,0 +1,80 @@
+# Button Copy
+
+A desktop browser extension for manually collecting website buttons. The library uses a dark theme and #004225 forest green. Captured buttons retain their source colors.
+
+## Install in Chrome, Edge, Brave, Opera, or Vivaldi
+
+1. Open the browser's extensions manager. In Chrome this is `chrome://extensions`; in Edge it is `edge://extensions`.
+2. Enable Developer mode.
+3. Choose **Load unpacked** and select `dist/chromium` from this project. The `extension` folder also works for development.
+4. Pin Button Copy to the browser toolbar.
+5. Open a regular website, click the extension, and choose **Choose a button**.
+
+The Chromium package was exercised in an actual Chromium browser. Other Chromium browsers use the same package but have not been individually tested here.
+
+## Install in Firefox
+
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Choose **Load Temporary Add-on**.
+3. Select `dist/firefox/manifest.json`.
+
+Firefox 128 or later is the declared target. The Firefox manifest uses background scripts rather than a Chromium service worker. This package has been checked for syntax and file references, but an actual Firefox session has not been tested. Temporary add-ons are removed when Firefox restarts; persistent distribution requires Mozilla signing.
+
+## Safari on macOS
+
+Safari requires an Apple extension wrapper. The source is prepared in `dist/safari-source`; it is not an installable Safari app.
+
+On a Mac with Xcode, run Apple's converter:
+
+```sh
+xcrun safari-web-extension-converter /absolute/path/to/dist/safari-source --app-name "Button Copy"
+```
+
+Follow Xcode's build and signing steps, then enable the extension in Safari's extension settings. Conversion, signing, and Safari runtime verification require macOS and have not been done in this Windows workspace. See [Apple's packaging instructions](https://developer.apple.com/documentation/safariservices/packaging-a-web-extension-for-safari).
+
+## Capture and export
+
+- Point at a button and click to select it. The picker blocks its usual website action. Move to the picker toolbar and click **Save button**.
+- Alt + click selects a custom element. **Select parent** includes a wrapper when needed. Escape cancels.
+- Open the library to rename, search, preview, and select saved buttons.
+- Click a button's name area to view its states, code, source, and capture notes.
+- Previews use the source viewport width. In details, choose 600, 900, or 1440 px to test captured responsive rules.
+- **Export button** and **Export selected** download ZIPs. Each contains an `index.html` preview plus separate HTML, CSS, JavaScript replay, and capture notes for each button.
+- **Save preview HTML** downloads a single HTML document with embedded CSS and animation replay.
+- **Back up library** and **Import backup** move local captures between browsers. Removing the extension or clearing its data removes its local library.
+
+## Fidelity and known limits
+
+The capture combines computed defaults with readable matched CSS rules, including pseudo-elements, interaction states, media queries, transitions, keyframes, fonts, and embedded image assets. Running Web Animations API animations are serialized for replay. SVG IDs and animation names are scoped so several exported buttons can coexist.
+
+This is not a universal guarantee of identical rendering. Every capture carries notes about website JavaScript and rendering context. Additional notes identify inaccessible stylesheets, missing assets, external state triggers, shadow content, unresolved variables, nested CSS, SVG declarative animation, and canvas content.
+
+- Arbitrary original JavaScript, click actions, framework state, event listeners, unobserved animations, scroll triggers, and animation-library logic are not copied.
+- CSS selector specificity is reconstructed approximately; cascade-layer precedence and advanced/nested selectors may differ. Inherited page layout and container query contexts are not reproduced wholesale.
+- Open shadow content is flattened. Closed shadow roots and custom element internals cannot be guaranteed.
+- Fonts/images are embedded when the servers and browser permissions allow downloading them. Use **Allow resources and retry** for the specific affected domains. Recapture after allowing unreadable stylesheet domains to recover their rules.
+- A missing asset remains an external dependency in exports and appears in the notes. Previews block external resources, so unavailable fonts and images may appear differently until embedded.
+- Capture bounds are 160 elements, 64 assets, 5 MB per resource, and 20 MB of embedded capture data. These bounds prevent selecting an entire page accidentally.
+- Browser settings, extension stores, local files, and other privileged pages may prohibit capture. For embedded frames, open the frame URL in its own tab.
+- SVG declarative animation nodes and executable markup are omitted. Preview frames have opaque origins, no extension APIs, and no network access.
+
+## Privacy and permissions
+
+No account, sync, analytics, or upload service. Captures are stored in `storage.local`. The extension uses `activeTab` and `scripting` after toolbar activation, plus local/unlimited storage. Optional website permissions are requested only after an explicit resource retry or choosing a website from the library. Asset requests omit credentials. Source URLs and visible button content become part of the saved capture.
+
+## Development and checks
+
+The extension has no production dependencies or bundling requirement. With Node.js:
+
+```sh
+npm run build
+npm test
+npm run verify
+node scripts/serve-fixtures.mjs
+```
+
+The fixture server opens at `http://127.0.0.1:4173`. Use it to test normal, hover, pressed, focus, disabled, pseudo-element, responsive, and animated buttons. Choosing them must not increment the website action count.
+
+`tests/browser.mjs` uses Playwright and a full Chromium executable. Install Playwright separately for these integration checks, or provide `BC_PLAYWRIGHT` as an absolute module URL and `BC_BROWSER` as the executable path. Run `node tests/browser.mjs`. The test copies the extension under `test-results` and adds localhost host permissions only to that test copy. Shipping manifests do not include them.
+
+Generated packages are in `dist`. See `docs/verification.md` for the checks run in this workspace.

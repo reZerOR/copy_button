@@ -1,0 +1,511 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-11T15:28:12.3518292Z",
+  "title": "Design System: Button Copy",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "bg",
+        "tonalRamp": [
+          "oklch(15% 0.0100 158.86)",
+          "oklch(26% 0.0100 158.86)",
+          "oklch(38% 0.0100 158.86)",
+          "oklch(49% 0.0100 158.86)",
+          "oklch(61% 0.0100 158.86)",
+          "oklch(72% 0.0100 158.86)",
+          "oklch(84% 0.0100 158.86)",
+          "oklch(95% 0.0100 158.86)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "surface",
+        "tonalRamp": [
+          "oklch(15% 0.0143 153.98)",
+          "oklch(26% 0.0143 153.98)",
+          "oklch(38% 0.0143 153.98)",
+          "oklch(49% 0.0143 153.98)",
+          "oklch(61% 0.0143 153.98)",
+          "oklch(72% 0.0143 153.98)",
+          "oklch(84% 0.0143 153.98)",
+          "oklch(95% 0.0143 153.98)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "surface 2",
+        "tonalRamp": [
+          "oklch(15% 0.0193 154.31)",
+          "oklch(26% 0.0193 154.31)",
+          "oklch(38% 0.0193 154.31)",
+          "oklch(49% 0.0193 154.31)",
+          "oklch(61% 0.0193 154.31)",
+          "oklch(72% 0.0193 154.31)",
+          "oklch(84% 0.0193 154.31)",
+          "oklch(95% 0.0193 154.31)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "border",
+        "tonalRamp": [
+          "oklch(15% 0.0253 153.83)",
+          "oklch(26% 0.0253 153.83)",
+          "oklch(38% 0.0253 153.83)",
+          "oklch(49% 0.0253 153.83)",
+          "oklch(61% 0.0253 153.83)",
+          "oklch(72% 0.0253 153.83)",
+          "oklch(84% 0.0253 153.83)",
+          "oklch(95% 0.0253 153.83)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "ink",
+        "tonalRamp": [
+          "oklch(15% 0.0092 150.69)",
+          "oklch(26% 0.0092 150.69)",
+          "oklch(38% 0.0092 150.69)",
+          "oklch(49% 0.0092 150.69)",
+          "oklch(61% 0.0092 150.69)",
+          "oklch(72% 0.0092 150.69)",
+          "oklch(84% 0.0092 150.69)",
+          "oklch(95% 0.0092 150.69)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "muted",
+        "tonalRamp": [
+          "oklch(15% 0.0278 152.25)",
+          "oklch(26% 0.0278 152.25)",
+          "oklch(38% 0.0278 152.25)",
+          "oklch(49% 0.0278 152.25)",
+          "oklch(61% 0.0278 152.25)",
+          "oklch(72% 0.0278 152.25)",
+          "oklch(84% 0.0278 152.25)",
+          "oklch(95% 0.0278 152.25)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "forest": {
+        "role": "primary",
+        "displayName": "forest",
+        "tonalRamp": [
+          "oklch(15% 0.0795 156.98)",
+          "oklch(26% 0.0795 156.98)",
+          "oklch(38% 0.0795 156.98)",
+          "oklch(49% 0.0795 156.98)",
+          "oklch(61% 0.0795 156.98)",
+          "oklch(72% 0.0795 156.98)",
+          "oklch(84% 0.0795 156.98)",
+          "oklch(95% 0.0795 156.98)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "forest-hover": {
+        "role": "primary",
+        "displayName": "forest hover",
+        "tonalRamp": [
+          "oklch(15% 0.0956 156.75)",
+          "oklch(26% 0.0956 156.75)",
+          "oklch(38% 0.0956 156.75)",
+          "oklch(49% 0.0956 156.75)",
+          "oklch(61% 0.0956 156.75)",
+          "oklch(72% 0.0956 156.75)",
+          "oklch(84% 0.0956 156.75)",
+          "oklch(95% 0.0956 156.75)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "focus": {
+        "role": "neutral",
+        "displayName": "focus",
+        "tonalRamp": [
+          "oklch(15% 0.0788 159.06)",
+          "oklch(26% 0.0788 159.06)",
+          "oklch(38% 0.0788 159.06)",
+          "oklch(49% 0.0788 159.06)",
+          "oklch(61% 0.0788 159.06)",
+          "oklch(72% 0.0788 159.06)",
+          "oklch(84% 0.0788 159.06)",
+          "oklch(95% 0.0788 159.06)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "action-ink": {
+        "role": "neutral",
+        "displayName": "action ink",
+        "tonalRamp": [
+          "oklch(15% 0.0132 159.92)",
+          "oklch(26% 0.0132 159.92)",
+          "oklch(38% 0.0132 159.92)",
+          "oklch(49% 0.0132 159.92)",
+          "oklch(61% 0.0132 159.92)",
+          "oklch(72% 0.0132 159.92)",
+          "oklch(84% 0.0132 159.92)",
+          "oklch(95% 0.0132 159.92)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "secondary-hover": {
+        "role": "neutral",
+        "displayName": "secondary hover",
+        "tonalRamp": [
+          "oklch(15% 0.0299 152.15)",
+          "oklch(26% 0.0299 152.15)",
+          "oklch(38% 0.0299 152.15)",
+          "oklch(49% 0.0299 152.15)",
+          "oklch(61% 0.0299 152.15)",
+          "oklch(72% 0.0299 152.15)",
+          "oklch(84% 0.0299 152.15)",
+          "oklch(95% 0.0299 152.15)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "rail": {
+        "role": "neutral",
+        "displayName": "rail",
+        "tonalRamp": [
+          "oklch(15% 0.0156 157.24)",
+          "oklch(26% 0.0156 157.24)",
+          "oklch(38% 0.0156 157.24)",
+          "oklch(49% 0.0156 157.24)",
+          "oklch(61% 0.0156 157.24)",
+          "oklch(72% 0.0156 157.24)",
+          "oklch(84% 0.0156 157.24)",
+          "oklch(95% 0.0156 157.24)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "preview": {
+        "role": "neutral",
+        "displayName": "preview",
+        "tonalRamp": [
+          "oklch(15% 0.0172 155.72)",
+          "oklch(26% 0.0172 155.72)",
+          "oklch(38% 0.0172 155.72)",
+          "oklch(49% 0.0172 155.72)",
+          "oklch(61% 0.0172 155.72)",
+          "oklch(72% 0.0172 155.72)",
+          "oklch(84% 0.0172 155.72)",
+          "oklch(95% 0.0172 155.72)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "detail": {
+        "role": "neutral",
+        "displayName": "detail",
+        "tonalRamp": [
+          "oklch(15% 0.0178 155.37)",
+          "oklch(26% 0.0178 155.37)",
+          "oklch(38% 0.0178 155.37)",
+          "oklch(49% 0.0178 155.37)",
+          "oklch(61% 0.0178 155.37)",
+          "oklch(72% 0.0178 155.37)",
+          "oklch(84% 0.0178 155.37)",
+          "oklch(95% 0.0178 155.37)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "detail-border": {
+        "role": "neutral",
+        "displayName": "detail border",
+        "tonalRamp": [
+          "oklch(15% 0.0386 155.47)",
+          "oklch(26% 0.0386 155.47)",
+          "oklch(38% 0.0386 155.47)",
+          "oklch(49% 0.0386 155.47)",
+          "oklch(61% 0.0386 155.47)",
+          "oklch(72% 0.0386 155.47)",
+          "oklch(84% 0.0386 155.47)",
+          "oklch(95% 0.0386 155.47)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "selected-border": {
+        "role": "neutral",
+        "displayName": "selected border",
+        "tonalRamp": [
+          "oklch(15% 0.0599 158.67)",
+          "oklch(26% 0.0599 158.67)",
+          "oklch(38% 0.0599 158.67)",
+          "oklch(49% 0.0599 158.67)",
+          "oklch(61% 0.0599 158.67)",
+          "oklch(72% 0.0599 158.67)",
+          "oklch(84% 0.0599 158.67)",
+          "oklch(95% 0.0599 158.67)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "state-bg": {
+        "role": "neutral",
+        "displayName": "state bg",
+        "tonalRamp": [
+          "oklch(15% 0.0327 156.30)",
+          "oklch(26% 0.0327 156.30)",
+          "oklch(38% 0.0327 156.30)",
+          "oklch(49% 0.0327 156.30)",
+          "oklch(61% 0.0327 156.30)",
+          "oklch(72% 0.0327 156.30)",
+          "oklch(84% 0.0327 156.30)",
+          "oklch(95% 0.0327 156.30)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "state-ink": {
+        "role": "neutral",
+        "displayName": "state ink",
+        "tonalRamp": [
+          "oklch(15% 0.0379 156.34)",
+          "oklch(26% 0.0379 156.34)",
+          "oklch(38% 0.0379 156.34)",
+          "oklch(49% 0.0379 156.34)",
+          "oklch(61% 0.0379 156.34)",
+          "oklch(72% 0.0379 156.34)",
+          "oklch(84% 0.0379 156.34)",
+          "oklch(95% 0.0379 156.34)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "code-bg": {
+        "role": "neutral",
+        "displayName": "code bg",
+        "tonalRamp": [
+          "oklch(15% 0.0101 158.76)",
+          "oklch(26% 0.0101 158.76)",
+          "oklch(38% 0.0101 158.76)",
+          "oklch(49% 0.0101 158.76)",
+          "oklch(61% 0.0101 158.76)",
+          "oklch(72% 0.0101 158.76)",
+          "oklch(84% 0.0101 158.76)",
+          "oklch(95% 0.0101 158.76)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "code-ink": {
+        "role": "neutral",
+        "displayName": "code ink",
+        "tonalRamp": [
+          "oklch(15% 0.0319 157.11)",
+          "oklch(26% 0.0319 157.11)",
+          "oklch(38% 0.0319 157.11)",
+          "oklch(49% 0.0319 157.11)",
+          "oklch(61% 0.0319 157.11)",
+          "oklch(72% 0.0319 157.11)",
+          "oklch(84% 0.0319 157.11)",
+          "oklch(95% 0.0319 157.11)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      },
+      "note-ink": {
+        "role": "neutral",
+        "displayName": "note ink",
+        "tonalRamp": [
+          "oklch(15% 0.0502 86.33)",
+          "oklch(26% 0.0502 86.33)",
+          "oklch(38% 0.0502 86.33)",
+          "oklch(49% 0.0502 86.33)",
+          "oklch(61% 0.0502 86.33)",
+          "oklch(72% 0.0502 86.33)",
+          "oklch(84% 0.0502 86.33)",
+          "oklch(95% 0.0502 86.33)"
+        ],
+        "rampPurpose": "Generated inspection ramp; only DESIGN.md values are shipped interface colors."
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "purpose": "General interface text.",
+        "displayName": "Body"
+      },
+      "label": {
+        "purpose": "Labels, counts, and compact controls.",
+        "displayName": "Metadata"
+      },
+      "action": {
+        "purpose": "Main and supporting action buttons.",
+        "displayName": "Action"
+      },
+      "card-title": {
+        "purpose": "Single-line specimen names.",
+        "displayName": "Capture name"
+      },
+      "code": {
+        "purpose": "Exported HTML, CSS, and JavaScript.",
+        "displayName": "Code"
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "button-background",
+        "purpose": "Interface button background feedback.",
+        "value": "background .16s ease-out"
+      },
+      {
+        "name": "reduced-motion",
+        "purpose": "Remove interface button transitions when requested.",
+        "value": "@media(prefers-reduced-motion:reduce){button{transition:none}}"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide",
+        "value": "1600px",
+        "query": "(min-width:1600px)"
+      },
+      {
+        "name": "compact",
+        "value": "1000px",
+        "query": "(max-width:1000px)"
+      },
+      {
+        "name": "narrow",
+        "value": "700px",
+        "query": "(max-width:700px)"
+      }
+    ],
+    "focus": {
+      "purpose": "Keyboard focus and search focus-within.",
+      "value": "2px solid var(--focus)",
+      "offset": "3px"
+    },
+    "elevation": {
+      "detail": 20,
+      "dialogBackdrop": "#0008",
+      "toast": 50,
+      "method": "Tonal layers and one-pixel borders; no interface box shadows.",
+      "tabPicker": 10
+    },
+    "source": {
+      "stylesheet": "extension/ui.css",
+      "review": "Shipped review approved desktop, compact desktop, details, and popup.",
+      "markup": [
+        "extension/library.html",
+        "extension/popup.html"
+      ]
+    },
+    "observedHeadings": {
+      "section": "21px, weight 550, letter-spacing -.02em",
+      "purpose": "Observed shipped system-font headings, not a future display-face mandate.",
+      "compact": "27px",
+      "detail": "17px",
+      "popup": "27px / 1.22",
+      "library": "32px / 1.15, weight 600, letter-spacing -.03em"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Capture and single-button export actions.",
+      "html": "<button class=\"ds-primary\">Choose a button</button>",
+      "css": ".ds-primary{font:550 14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;display:inline-flex;gap:9px;align-items:center;justify-content:center;cursor:pointer;border-radius:7px;padding:11px 17px;min-height:42px;transition:background .16s ease-out;text-align:left;border:0;background:var(--forest,#004225);color:#f0faf4}.ds-primary:hover:not(:disabled){background:var(--forest-hover,#075a35)}.ds-primary:focus-visible{outline:2px solid var(--focus,#8bc7a5);outline-offset:3px;}.ds-primary:disabled{opacity:.45;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
+    },
+    {
+      "name": "Secondary action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Library access and supporting export actions.",
+      "html": "<button class=\"ds-secondary\">Open library</button>",
+      "css": ".ds-secondary{font:550 14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;display:inline-flex;gap:9px;align-items:center;justify-content:center;cursor:pointer;border-radius:7px;padding:11px 17px;min-height:42px;transition:background .16s ease-out;text-align:left;border:1px solid var(--border,#2e3c32);background:var(--surface-2,#1b251e);color:var(--ink,#eef4ef)}.ds-secondary:hover:not(:disabled){background:#27372b}.ds-secondary:focus-visible{outline:2px solid var(--focus,#8bc7a5);outline-offset:3px;}.ds-secondary:disabled{opacity:.45;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-secondary{transition:none}}"
+    },
+    {
+      "name": "Search field",
+      "kind": "input",
+      "refersTo": "search",
+      "description": "One outlined container around the search icon and text field.",
+      "html": "<label class=\"ds-search\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"10\" r=\"6\"/><path d=\"m15 15 6 6\"/></svg><input type=\"search\" aria-label=\"Search saved buttons\" placeholder=\"Search by name or website\"></label>",
+      "css": ".ds-search{display:flex;align-items:center;gap:10px;background:var(--surface,#141b16);border:1px solid var(--border,#2e3c32);border-radius:7px;padding:9px 13px;max-width:460px;color:var(--muted,#acbeb0)}.ds-search svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}.ds-search input{font:13px/1.5 system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;border:0;outline:none;background:transparent;width:100%;color:var(--ink,#eef4ef);caret-color:var(--focus,#8bc7a5)}.ds-search input::placeholder{color:var(--muted,#acbeb0);opacity:1}.ds-search:focus-within{outline:2px solid var(--focus,#8bc7a5);outline-offset:3px;}"
+    },
+    {
+      "name": "Collection navigation",
+      "kind": "nav",
+      "refersTo": "navigation-selected",
+      "description": "Selected collection filter with a right-aligned count.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Library filters\"><button class=\"ds-nav-item ds-selected\" aria-pressed=\"true\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/></svg>All buttons<span class=\"ds-count\">0</span></button><button class=\"ds-nav-item\" aria-pressed=\"false\">Capture notes<span class=\"ds-count\">0</span></button></nav>",
+      "css": ".ds-nav{display:flex;flex-direction:column;gap:6px;width:184px}.ds-nav-item{font:550 13px/1.5 system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;border:0;border-radius:7px;text-align:left;background:transparent;color:var(--muted,#acbeb0);cursor:pointer;transition:background .16s ease-out}.ds-nav-item svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.65;flex-shrink:0}.ds-count{margin-left:auto;font-size:12px;color:#c4d7ca;background:#26362b;border-radius:5px;padding:2px 7px;font-variant-numeric:tabular-nums}.ds-nav-item.ds-selected{background:var(--forest,#004225);color:#edf7f0}.ds-selected .ds-count{background:#1d6140;color:#f0faf4}.ds-nav-item:hover:not(.ds-selected){background:var(--surface-2,#1b251e);color:var(--ink,#eef4ef)}.ds-nav-item:focus-visible{outline:2px solid var(--focus,#8bc7a5);outline-offset:3px;}@media(prefers-reduced-motion:reduce){.ds-nav-item{transition:none}}"
+    },
+    {
+      "name": "State-count chip",
+      "kind": "chip",
+      "refersTo": "state-chip",
+      "description": "Static count of captured interaction states.",
+      "html": "<span class=\"ds-state-pill\">3 states</span>",
+      "css": ".ds-state-pill{display:inline-block;font:12px/1.5 system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;padding:3px 7px;background:#24372b;border-radius:4px;color:#bfdac8}"
+    },
+    {
+      "name": "Capture card",
+      "kind": "card",
+      "refersTo": "capture-card",
+      "description": "Preview container with independent selection and detail-opening controls. The example leaves the source preview empty.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-preview\"><label class=\"ds-card-select\"><input type=\"checkbox\" aria-label=\"Select saved button\"></label></div><button class=\"ds-card-info\"><span class=\"ds-title\">Saved button</span><span class=\"ds-domain\">example.com</span><span class=\"ds-card-bottom\"><span class=\"ds-state-pill\">3 states</span><span>Capture notes</span></span></button></article>",
+      "css": ".ds-card{font:14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;border:1px solid var(--border,#2e3c32);border-radius:var(--radius,12px);overflow:hidden;background:var(--surface,#141b16);min-width:0;width:260px;color:var(--ink,#eef4ef)}.ds-preview{height:182px;background:#19221c;position:relative;display:flex;align-items:center;justify-content:center}.ds-card-select{position:absolute;top:12px;left:12px;display:flex;padding:4px;background:#111a14;border:1px solid #3d5043;border-radius:5px}.ds-card-select input{margin:0;width:16px;height:16px;accent-color:#11633d;cursor:pointer}.ds-card-info{display:block;background:transparent;width:100%;text-align:left;padding:15px 17px 16px;border:0;color:inherit;cursor:pointer;font:550 14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;transition:background .16s ease-out}.ds-card-info:hover{background:#1b2a20}.ds-card-info:focus-visible,.ds-card-select input:focus-visible{outline:2px solid var(--focus,#8bc7a5);outline-offset:3px;}.ds-title{display:block;font-size:14px;font-weight:600;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;margin-bottom:5px}.ds-domain{font-size:12px;color:var(--muted,#acbeb0);display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}.ds-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:14px;font-size:12px;color:var(--muted,#acbeb0)}.ds-state-pill{display:inline-block;font-size:12px;padding:3px 7px;background:#24372b;border-radius:4px;color:#bfdac8}.ds-card:has(input:checked){border-color:#91bda3}@media(prefers-reduced-motion:reduce){.ds-card-info{transition:none}}"
+    },
+    {
+      "name": "Code panel",
+      "kind": "custom",
+      "refersTo": "code-panel",
+      "description": "Scrollable exported code with preserved whitespace.",
+      "html": "<pre class=\"ds-code\"><code>&lt;button class=\"captured-button\"&gt;Continue&lt;/button&gt;</code></pre>",
+      "css": ".ds-code{background:#0b100d;border:1px solid var(--border,#2e3c32);border-radius:8px;padding:16px;max-height:240px;overflow:auto;font:11px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;color:#c6ddce;margin:12px 0 0;white-space:pre;tab-size:2}"
+    },
+    {
+      "name": "Code selectors",
+      "kind": "custom",
+      "description": "Compact stateful buttons above the code panel.",
+      "html": "<div class=\"ds-code-tabs\" role=\"group\" aria-label=\"Code language\"><button class=\"ds-tab ds-selected\" aria-pressed=\"true\">HTML</button><button class=\"ds-tab\" aria-pressed=\"false\">CSS</button><button class=\"ds-tab\" aria-pressed=\"false\">JavaScript</button></div>",
+      "css": ".ds-code-tabs{display:flex;gap:5px;align-items:center}.ds-tab{font:550 12px/1.5 system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;padding:7px 10px;background:var(--surface-2,#1b251e);border:1px solid var(--border,#2e3c32);border-radius:5px;color:var(--muted,#acbeb0);cursor:pointer;transition:background .16s ease-out}.ds-tab.ds-selected{background:var(--forest,#004225);border-color:#377d52;color:#f0faf4}.ds-tab:focus-visible{outline:2px solid var(--focus,#8bc7a5);outline-offset:3px;}@media(prefers-reduced-motion:reduce){.ds-tab{transition:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The button specimen collection",
+    "overview": "Button Copy uses a dark, forest-tinted interface around locally captured website buttons. The library gives each capture an interactive preview with its original appearance, followed by its name, website, state count, and capture notes. The interface's own controls use forest green.\n\nThe fixed collection rail, preview grid, and right-hand detail panel keep filters, bulk actions, inspection, and code export distinct. Borders and background changes define these regions. Small system text carries metadata; the captured button is the main visual content.",
+    "keyCharacteristics": [
+      "Dark backgrounds with a pinned forest-green action color.",
+      "Original button styling inside isolated previews.",
+      "Visible capture notes beside each specimen and in its details.",
+      "Compact controls with explicit keyboard focus.",
+      "Flat containers with rounded corners and thin borders."
+    ],
+    "rules": [
+      {
+        "name": "Capture Color",
+        "section": "colors",
+        "body": "Apply the interface palette to collection controls; preserve each captured button's source colors."
+      },
+      {
+        "name": "Flat Container",
+        "section": "elevation",
+        "body": "Separate collection regions with their shipped backgrounds and borders rather than adding interface shadows."
+      },
+      {
+        "name": "Visible Focus",
+        "section": "components",
+        "body": "Preserve the focus outline on buttons, links, inputs, selects, and summaries; search outlines its enclosing field."
+      }
+    ],
+    "dos": [
+      "Do keep the pinned dark interface and forest action color.",
+      "Do preserve the source styling of captured buttons.",
+      "Do keep capture notes accessible from each specimen and its details.",
+      "Do use the existing focus outline and reduced-motion behavior.",
+      "Do use borders and tonal backgrounds to separate interface regions."
+    ],
+    "donts": [
+      "Don't recolor captured buttons to match the interface palette.",
+      "Don't replace empty collections with synthetic saved buttons.",
+      "Don't describe capture metadata as proof of guaranteed fidelity.",
+      "Don't add interface shadows to flat collection containers.",
+      "Don't turn the observed system-font page headings into a display typography mandate."
+    ]
+  }
+}
