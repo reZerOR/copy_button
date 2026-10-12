@@ -4,6 +4,7 @@
   const STATES = ['hover', 'active', 'focus', 'focus-visible', 'focus-within', 'disabled', 'enabled', 'checked'];
   const STATE_RE = /:(hover|active|focus-visible|focus-within|focus|disabled|enabled|checked)\b/g;
   const IGNORE_TAGS = new Set(['SCRIPT', 'STYLE', 'LINK', 'IFRAME', 'OBJECT', 'EMBED', 'META', 'BASE', 'AUDIO', 'VIDEO']);
+  const DEFAULT_LAYER = 'button-copy-computed-defaults';
   const warningsAlways = 'Website JavaScript handlers are not copied. CSS states and available Web Animations are captured; application actions and unobserved JavaScript effects may differ.';
 
   function splitSelectors(value) {
@@ -100,6 +101,22 @@
     flush(); return parts;
   }
 
+  function nestedSelector(selector, parent) {
+    if (!parent) return selector;
+    let result = '', quote = '', bracket = 0, replaced = false;
+    for (let i = 0; i < selector.length; i++) {
+      const c = selector[i];
+      if (c === '\\') { result += c + (selector[++i] || ''); continue; }
+      if (quote) { result += c; if (c === quote) quote = ''; continue; }
+      if (c === '"' || c === "'") quote = c;
+      if (c === '[') bracket++;
+      if (c === ']') bracket--;
+      if (c === '&' && !bracket) { result += `:is(${parent})`; replaced = true; }
+      else result += c;
+    }
+    return replaced ? result : `:is(${parent}) ${result}`;
+  }
+
   async function capture(target) {
     const scope = `bc-${crypto.randomUUID()}`;
     const rootSelector = `[data-bc-root="${scope}"]`;
@@ -107,7 +124,9 @@
     const resources = new Set(), nodes = [], families = new Set();
     const clone = document.createElement('div');
     clone.setAttribute('data-bc-root', scope);
-    const css = [`${rootSelector}{display:inline-block;isolation:isolate;position:relative;text-align:left;line-height:normal;color-scheme:normal;}`];
+    // Share one lowest-priority snapshot layer across captures so source layers
+    // still override defaults when several buttons are exported together.
+    const css = [`@layer ${DEFAULT_LAYER};`, `${rootSelector}{display:inline-block;isolation:isolate;position:relative;text-align:left;line-height:normal;color-scheme:normal;}`];
     const pseudoCss = [], usedAnimations = new Set();
     let count = 0;
 
@@ -186,14 +205,14 @@
         }
         properties.push(`${prop}:${value};`);
       }
-      css.push(`:where(${rootSelector} [data-bc-node="${key}"]){${properties.join('')}}`);
+      css.push(`@layer ${DEFAULT_LAYER}{:where(${rootSelector} [data-bc-node="${key}"]){${properties.join('')}}}`);
       for (const pseudo of ['::before', '::after']) {
         const style = getComputedStyle(source, pseudo);
         if (!['none', 'normal'].includes(style.content)) {
           // Custom properties inherit from the captured element. Freezing them
           // here would prevent its hover variables from reaching the pseudo.
           const p = [...style].filter(x => !x.startsWith('--')).map(x => `${x}:${absoluteCss(style.getPropertyValue(x), source.baseURI, resources)};`).join('');
-          pseudoCss.push(`:where(${rootSelector} [data-bc-node="${key}"])${pseudo}{${p}}`);
+          pseudoCss.push(`@layer ${DEFAULT_LAYER}{:where(${rootSelector} [data-bc-node="${key}"])${pseudo}{${p}}}`);
         }
       }
       if (source.tagName === 'CANVAS') {
@@ -224,6 +243,12 @@
     }
 
     const sheets = [], blocked = [], missingStylesheets = [], keyframes = [], fontFaces = [];
+    const layerDeclarations = [];
+    let anonymousLayers = 0;
+    function rememberLayer(text, envelopes) {
+      for (const env of [...envelopes].reverse()) text = `${env}{${text}}`;
+      layerDeclarations.push(text);
+    }
     const seenSheets = new Set();
     function scanSheet(sheet, base = document.baseURI, envelopes = []) {
       if (seenSheets.has(sheet)) return;
@@ -231,7 +256,7 @@
       try { visit(sheet.cssRules, sheet.href || base, envelopes); }
       catch { if (sheet.href) blocked.push({ url: sheet.href, envelopes }); else warnings.add('One inline stylesheet could not be read. Some states may be missing.'); }
     }
-    function visit(rules, base, envelopes) {
+    function visit(rules, base, envelopes, parentSelector = '') {
       for (const rule of rules) {
         if (rule.type === CSSRule.IMPORT_RULE) {
           const media = rule.media.mediaText;
@@ -240,12 +265,20 @@
         }
         if (rule.type === CSSRule.KEYFRAMES_RULE) { keyframes.push({ name: rule.name, text: absoluteCss(rule.cssText, base, resources), envelopes }); continue; }
         if (rule.type === CSSRule.FONT_FACE_RULE) { fontFaces.push({ family: rule.style.fontFamily, text: rule.cssText, base, envelopes }); continue; }
-        if (rule.selectorText && rule.style) { sheets.push({ rule, base, envelopes }); if (rule.cssRules?.length) warnings.add('Nested CSS rules may require recapture after converting them to flat selectors.'); continue; }
+        if (/^@layer\s+[^{}]+;\s*$/.test(rule.cssText)) { rememberLayer(rule.cssText, envelopes); continue; }
+        if (rule.style && (rule.selectorText || parentSelector)) {
+          const selectorText = rule.selectorText ? splitSelectors(rule.selectorText).map(selector => nestedSelector(selector, parentSelector)).join(',') : parentSelector;
+          sheets.push({ rule: { selectorText, style: rule.style }, base, envelopes });
+          if (rule.cssRules?.length) visit(rule.cssRules, base, envelopes, selectorText);
+          continue;
+        }
         if (rule.cssRules) {
-          const header = rule.cssText.slice(0, rule.cssText.indexOf('{')).trim();
+          let header = rule.cssText.slice(0, rule.cssText.indexOf('{')).trim();
           if (/^@(media|supports|container|layer|starting-style)\b/.test(header)) {
             if (header.startsWith('@container')) warnings.add('Container queries depend on the destination layout. Compare responsive previews after export.');
-            visit(rule.cssRules, base, [...envelopes, header]);
+            if (header === '@layer') header = `@layer ${scope}-anonymous-${anonymousLayers++}`;
+            if (header.startsWith('@layer')) rememberLayer(`${header}{}`, envelopes);
+            visit(rule.cssRules, base, [...envelopes, header], parentSelector);
           } else warnings.add('A stylesheet grouping rule could not be reconstructed.');
         }
       }
@@ -269,12 +302,42 @@
         } else { missingStylesheets.push(item.url); warnings.add(`Stylesheet unavailable. Its interaction and responsive rules may be missing: ${item.url}`); }
       }
     }
+    css.push(...layerDeclarations);
     const states = new Set(['default']);
     const nodeKeys = new Map(nodes.map(n => [n.source, n.key]));
     const dynamic = [];
     const specificity = selector => {
-      const stripped = selector.replace(/:where\([^)]*\)/g, '');
-      return (stripped.match(/#[\w-]+/g)?.length || 0) * 100 + (stripped.match(/\.[\w-]+|\[[^\]]+\]|:(?!:)[\w-]+/g)?.length || 0) * 10 + (stripped.match(/(^|[\s>+~])([a-z][\w-]*)|::[\w-]+/gi)?.length || 0);
+      let stripped = '', extra = 0, bracket = 0, quote = '';
+      for (let i = 0; i < selector.length; i++) {
+        const c = selector[i];
+        if (c === '\\') { stripped += c + (selector[++i] || ''); continue; }
+        if (quote) { if (c === quote) quote = ''; continue; }
+        if (c === '"' || c === "'") { quote = c; continue; }
+        if (c === '[') bracket++;
+        if (c === ']') bracket--;
+        const fn = !bracket && selector.slice(i).match(/^:(is|where|not|has)\(/);
+        if (fn) {
+          const start = i + fn[0].length;
+          let end = start, depth = 1, innerQuote = '';
+          for (; end < selector.length; end++) {
+            const ch = selector[end];
+            if (ch === '\\') { end++; continue; }
+            if (innerQuote) { if (ch === innerQuote) innerQuote = ''; continue; }
+            if (ch === '"' || ch === "'") innerQuote = ch;
+            else if (ch === '(') depth++;
+            else if (ch === ')' && --depth === 0) break;
+          }
+          if (!depth) {
+            // :is() used for a nesting parent adds the parent's specificity,
+            // not an extra pseudo-class. :where() always contributes zero.
+            if (fn[1] !== 'where') extra += Math.max(...splitSelectors(selector.slice(start, end)).map(specificity));
+            i = end; continue;
+          }
+        }
+        stripped += c;
+      }
+      stripped = stripped.replace(/\[[^\]]*\]/g, '[attribute]');
+      return extra + (stripped.match(/#[\w-]+/g)?.length || 0) * 100 + (stripped.match(/\.[\w-]+|\[[^\]]+\]|:(?!:)[\w-]+/g)?.length || 0) * 10 + (stripped.match(/(^|[\s>+~])([a-z][\w-]*)|::[\w-]+/gi)?.length || 0);
     };
     for (const { rule, base, envelopes } of sheets) {
       for (const originalSelector of splitSelectors(rule.selectorText)) for (const selector of selectorAlternatives(originalSelector)) {

@@ -23,11 +23,19 @@ const cases = [
   { name: 'Source backdrop composites transparent ancestor colors', css: 'body{background:#000}.backdrop{background:rgba(255,255,255,.1)}.test{background:rgba(255,255,255,.1)}', markup: '<div class="backdrop"><button class="test">Test</button></div>', backdrop: 'rgb(26, 26, 26)' },
   { name: 'Pseudo-elements inherit hover variables', css: '.test{--fill:linear-gradient(red,blue)}.test::before{content:"";display:block;width:20px;height:20px;background:var(--fill)}.test:hover{--fill:linear-gradient(green,yellow)}', markup: '<button class="test">Test</button>', pseudo: '::before' },
   { name: 'Children inherit hover variables', css: '.test{--fill:linear-gradient(red,blue)}.test span{display:block;background:var(--fill)}.test:hover{--fill:linear-gradient(green,yellow)}', markup: '<button class="test"><span>Test</span></button>', inspect: '.test span' },
-  { name: 'Containing open shadow stylesheet preserves hover', css: '', markup: '<div id="host"></div>', shadow: '.test{background:red}.test:hover{background:linear-gradient(green,yellow);box-shadow:0 4px 12px black}' }
+  { name: 'Containing open shadow stylesheet preserves hover', css: '', markup: '<div id="host"></div>', shadow: '.test{background:red}.test:hover{background:linear-gradient(green,yellow);box-shadow:0 4px 12px black}' },
+  { name: 'Layered hover rules override computed defaults', css: '@layer utilities{.test{background:red}.test:hover{background:green;box-shadow:0 4px 12px black}}', markup: '<button class="test">Test</button>' },
+  { name: 'Nested hover rules are captured', css: '.test{background:red;&:hover{background:green;box-shadow:0 4px 12px black}}', markup: '<button class="test">Test</button>' },
+  { name: 'Layer ordering survives source traversal order', css: '@layer strong,weak;@layer weak{.test:hover{background:blue}}@layer strong{.test{background:red}.test:hover{background:green}}', markup: '<button class="test">Test</button>' },
+  { name: 'Nested hover inside a media query is captured', css: '@layer utilities{.test{background:red;@media(hover:hover){&:hover{background:green}}}}', markup: '<button class="test">Test</button>' },
+  { name: 'Nested declarations retain their source order', css: '.test{background:red;&{background:green}background:blue;}', markup: '<button class="test">Test</button>' },
+  { name: 'Anonymous layers retain priority within their block', css: '@layer{.test:hover{background:green}.test{background:red}}', markup: '<button class="test">Test</button>' }
 ];
 let failures = 0;
 try {
-  for (const item of cases) {
+  const selectedCases = process.argv[2] ? cases.filter(item => item.name.includes(process.argv[2])) : cases;
+  assert.ok(selectedCases.length, 'The selected fidelity case exists');
+  for (const item of selectedCases) {
     const page = await browser.newPage();
     const copy = await browser.newPage();
     try {

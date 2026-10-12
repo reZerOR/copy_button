@@ -51,10 +51,12 @@ CSS variables and shorthand declarations remain in the captured rules so hover c
 
 Unset variable snapshots retain their invalid state so nested color fallbacks still work. Rewritten selector weights distinguish class rules from element resets, preserving light-wash layers. Previews default to the composited ancestor background color, and exported preview stages use that color too. Choose Dark or Light in the detail view to test another backdrop. Ancestor background images and gradients still need the original page context.
 
+Computed defaults use a lowest-priority cascade layer so layered source hover rules can override them. Native nested CSS selectors and nested media/supports declarations are traversed and flattened. Source layer ordering and anonymous layer blocks are retained.
+
 This is not a universal guarantee of identical rendering. Every capture carries notes about website JavaScript and rendering context. Additional notes identify inaccessible stylesheets, missing assets, external state triggers, shadow content, unresolved variables, nested CSS, SVG declarative animation, and canvas content.
 
 - Arbitrary original JavaScript, click actions, framework state, event listeners, unobserved animations, scroll triggers, and animation-library logic are not copied.
-- CSS selector specificity is reconstructed approximately; cascade-layer precedence and advanced/nested selectors may differ. Inherited page layout and container query contexts are not reproduced wholesale.
+- CSS selector specificity is reconstructed approximately; advanced selectors and layer names from different source sites may differ when combined. Inherited page layout, ancestor variable states, and container query contexts are not reproduced wholesale.
 - Open shadow content is flattened. Closed shadow roots and custom element internals cannot be guaranteed.
 - Fonts/images are embedded when the servers and browser permissions allow downloading them. Use **Allow resources and retry** for the specific affected domains. Recapture after allowing unreadable stylesheet domains to recover their rules.
 - A missing asset remains an external dependency in exports and appears in the notes. Previews block external resources, so unavailable fonts and images may appear differently until embedded.
@@ -84,3 +86,5 @@ The fixture server opens at `http://127.0.0.1:4173`. Use it to test normal, hove
 With the same Playwright configuration, run `npm run test:fidelity` to compare default and hover gradients, colors, and shadows against the source in standalone HTML and the forced-state preview. The cases cover changing CSS variables, grouped state selectors, nested fallbacks, invalid and intentionally empty variables, variable inheritance, class rules versus element resets, source backdrops, and containing open shadow-root stylesheets.
 
 Generated packages are in `dist`. See `docs/verification.md` for the checks run in this workspace.
+
+See `docs/interaction-capture-investigation.md` for the shadcn/ui hover reproduction and the remaining limits of JavaScript hover/click animations.
