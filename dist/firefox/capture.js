@@ -111,6 +111,26 @@
     const pseudoCss = [], usedAnimations = new Set();
     let count = 0;
 
+    function sourceBackdrop() {
+      const colors = [];
+      let ancestor = target.assignedSlot || target.parentElement || target.getRootNode().host;
+      while (ancestor) {
+        const style = getComputedStyle(ancestor);
+        colors.push(style.backgroundColor);
+        if (style.backgroundImage !== 'none') warnings.add('The source backdrop includes an image or gradient. Its ancestor colors were saved for preview; background imagery is not included.');
+        ancestor = ancestor.assignedSlot || ancestor.parentElement || ancestor.getRootNode().host;
+      }
+      // Composite translucent ancestor colors over the page canvas. Reading
+      // body alone misses painted containers and often returns transparent.
+      const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+      const context = canvas.getContext('2d');
+      context.fillStyle = getComputedStyle(document.documentElement).colorScheme.includes('dark') ? '#121212' : '#ffffff';
+      context.fillRect(0, 0, 1, 1);
+      for (const color of colors.reverse()) { context.fillStyle = color; context.fillRect(0, 0, 1, 1); }
+      const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
     function copy(source) {
       if (source.nodeType === Node.TEXT_NODE) return document.createTextNode(source.textContent);
       if (source.nodeType !== Node.ELEMENT_NODE || IGNORE_TAGS.has(source.tagName)) return null;
@@ -146,14 +166,24 @@
       const properties = [];
       const inheritanceParent = source.assignedSlot || source.parentElement || source.getRootNode().host;
       const inherited = source !== target && inheritanceParent ? getComputedStyle(inheritanceParent) : null;
+      const typed = source.computedStyleMap?.();
+      const inheritedTyped = inherited ? inheritanceParent.computedStyleMap?.() : null;
       for (const prop of computed) {
         // Keep inherited variables on the root. Descendants must inherit them
         // rather than hold a default snapshot that masks the parent's hover.
-        if (prop.startsWith('--') && inherited?.getPropertyValue(prop) === computed.getPropertyValue(prop)) continue;
+        const customProperty = prop.startsWith('--');
+        if (customProperty && inherited?.getPropertyValue(prop) === computed.getPropertyValue(prop) && typed?.has(prop) === inheritedTyped?.has(prop)) continue;
         // Preserve intrinsic sizing instead of freezing a button's measured pixel size.
         // Explicit author sizes are restored by matching rules below.
         const intrinsic = source === target && ['inline-block', 'inline-flex', 'inline-grid'].includes(computed.display) && ['width', 'height'].includes(prop);
-        const value = intrinsic ? 'auto' : absoluteCss(computed.getPropertyValue(prop), source.baseURI, resources);
+        let value = intrinsic ? 'auto' : absoluteCss(computed.getPropertyValue(prop), source.baseURI, resources);
+        // CSSOM serializes both a guaranteed-invalid variable and an authored
+        // empty variable as "". Defining the invalid one as empty disables var()
+        // fallbacks. Typed OM distinguishes them; initial restores invalidity.
+        if (customProperty && value === '' && (!typed || !typed.has(prop))) {
+          value = 'initial';
+          if (!typed) warnings.add('This browser cannot distinguish unset CSS variables from intentionally empty values. Empty variable snapshots were treated as unset; compare the preview with the source.');
+        }
         properties.push(`${prop}:${value};`);
       }
       css.push(`:where(${rootSelector} [data-bc-node="${key}"]){${properties.join('')}}`);
@@ -277,7 +307,9 @@
             if (/^animation/.test(prop)) for (const frame of keyframes) if (value.includes(frame.name)) usedAnimations.add(frame.name);
           }
           // Extra attribute repetitions retain relative specificity after removing source ancestry.
-          const weight = Math.min(30, Math.max(1, Math.ceil(specificity(originalSelector) / 10)));
+          // Do not round type and class selectors to the same weight. A later
+          // element reset must not override a more specific light-layer class.
+          const weight = Math.min(300, specificity(originalSelector) + 1);
           const mapped = `${root} ${`[data-bc-node="${key}"]`.repeat(weight)}${conditions}${info.pseudo}`;
           let text = `${mapped}{${declaration}}`;
           for (const env of [...envelopes].reverse()) text = `${env}{${text}}`;
@@ -310,12 +342,13 @@
     if (resources.size > 64) warnings.add('This selection uses more than 64 resources. Some assets remain external.');
     warnings.add(`Default appearance was measured at a ${innerWidth} × ${innerHeight} viewport. Inherited layout, browser font rendering, and complex selector specificity can differ after export. Compare the preview with the source.`);
     const rect = target.getBoundingClientRect();
+    const background = sourceBackdrop();
     return {
       version: 1, scope, name: (target.getAttribute('aria-label') || target.innerText || target.value || 'Untitled button').trim().slice(0, 100),
       html: clone.outerHTML, css: finalCss, animations, states: [...states], warnings: [...warnings],
       resources: [...resources], blockedStylesheets: missingStylesheets,
       dimensions: { width: Math.round(rect.width), height: Math.round(rect.height), viewportWidth: innerWidth, viewportHeight: innerHeight },
-      background: getComputedStyle(document.body).backgroundColor,
+      background,
       capturedAt: new Date().toISOString()
     };
   }

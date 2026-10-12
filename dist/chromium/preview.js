@@ -13,6 +13,9 @@ function sanitizeMarkup(html) {
   return doc.body.innerHTML;
 }
 let capture, style, running = [];
+function setBackground(color) {
+  if (typeof color === 'string' && /^(#[0-9a-f]{3,8}|rgba?\([\d., %]+\)|transparent)$/i.test(color)) document.body.style.background = color;
+}
 function replay() {
   running.forEach(a => a.cancel()); running = [];
   const mount = document.querySelector('#mount');
@@ -32,6 +35,7 @@ window.addEventListener('message', event => {
     capture = message.capture;
     if (!capture || typeof capture.html !== 'string' || typeof capture.css !== 'string') return;
     document.querySelector('#mount').innerHTML = sanitizeMarkup(capture.html);
+    setBackground(capture.background || '#141b16');
     style?.remove(); style = document.createElement('style');
     style.textContent = capture.css.replace(/:(hover|active|focus-visible|focus-within|focus|disabled|checked)\b/g, (_, state) => `:is(:${state},[data-bc-state~="${state}"])`);
     document.head.append(style); replay();
@@ -41,7 +45,7 @@ window.addEventListener('message', event => {
     document.querySelectorAll('[data-bc-node]').forEach(node => node.setAttribute('data-bc-state', state));
   }
   if (message.action === 'background') {
-    if (/^(#[0-9a-f]{3,8}|rgba?\([\d., %]+\)|transparent)$/i.test(message.color)) document.body.style.background = message.color;
+    setBackground(message.color);
   }
   if (message.action === 'replay') replay();
 });

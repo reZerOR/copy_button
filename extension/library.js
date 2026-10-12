@@ -89,7 +89,7 @@ function openDetail(id) {
   else $('#source').removeAttribute('href');
   for (const [frame] of frames) if ($('#detail-preview').contains(frame)) frames.delete(frame);
   $('#detail-preview').replaceChildren(preview(c, `${c.name} detailed interactive preview`));
-  $('#preview-background').value = '#141b16';
+  $('#preview-background').value = 'source';
   $('#preview-width').value = 'source';
   $('#states').replaceChildren();
   for (const state of ['default', 'hover', 'active', 'focus', 'focus-visible', 'disabled', 'checked']) {

@@ -15,6 +15,12 @@ const cases = [
   { name: 'Functional selectors preserve type intersections', css: '.test{background:red}button:is(button:hover,a:focus-visible){background:green;box-shadow:0 4px 12px black}', markup: '<button class="test">Test</button>' },
   { name: 'State-only where alternatives preserve hover', css: '.test{background:red}.test:where(:hover,:focus-visible){background:green;box-shadow:0 4px 12px black}', markup: '<button class="test">Test</button>' },
   { name: 'Nested variable fallback preserves gradient', css: '.test{background:red}.test:hover{background:var(--missing,linear-gradient(green,yellow));box-shadow:var(--missing-shadow,0 4px 12px black)}', markup: '<button class="test">Test</button>' },
+  { name: 'Invalid inherited variables retain gradient fallbacks', css: 'html{--rim:var(--absent)}.test{--tone:rgba(255,255,255,.1);background:linear-gradient(var(--rim,var(--tone)),transparent 75%)}', markup: '<button class="test">Test</button>' },
+  { name: 'Intentionally empty inherited variables remain empty', css: 'html{--rim:;}.test{background:linear-gradient(var(--rim,red),transparent 75%)}', markup: '<button class="test">Test</button>' },
+  { name: 'Invalid inherited variables retain masked rim light', css: 'html{--rim:var(--absent)}.test{--tone:rgba(255,255,255,.1);position:relative;border-radius:20px;background:#292929}.rim{position:absolute;inset:0;border-radius:inherit}.rim::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:.5px;mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;background:linear-gradient(var(--rim,var(--tone)),transparent 75%)}', markup: '<button class="test">Test<span class="rim"></span></button>', inspect: '.rim', pseudo: '::before' },
+  { name: 'Class light wash wins over a later element reset', css: '.test{position:relative}.wash{background:rgba(255,255,255,.05)}div{background:transparent}', markup: '<button class="test">Test<div class="wash">Light wash</div></button>', inspect: '.wash' },
+  { name: 'Preview uses the source backdrop for translucent fills', css: 'body{background:#fff}.backdrop{background:#0f0f0f}.test{background:rgba(255,255,255,.1)}', markup: '<div class="backdrop"><button class="test">Test</button></div>', backdrop: 'rgb(15, 15, 15)' },
+  { name: 'Source backdrop composites transparent ancestor colors', css: 'body{background:#000}.backdrop{background:rgba(255,255,255,.1)}.test{background:rgba(255,255,255,.1)}', markup: '<div class="backdrop"><button class="test">Test</button></div>', backdrop: 'rgb(26, 26, 26)' },
   { name: 'Pseudo-elements inherit hover variables', css: '.test{--fill:linear-gradient(red,blue)}.test::before{content:"";display:block;width:20px;height:20px;background:var(--fill)}.test:hover{--fill:linear-gradient(green,yellow)}', markup: '<button class="test">Test</button>', pseudo: '::before' },
   { name: 'Children inherit hover variables', css: '.test{--fill:linear-gradient(red,blue)}.test span{display:block;background:var(--fill)}.test:hover{--fill:linear-gradient(green,yellow)}', markup: '<button class="test"><span>Test</span></button>', inspect: '.test span' },
   { name: 'Containing open shadow stylesheet preserves hover', css: '', markup: '<div id="host"></div>', shadow: '.test{background:red}.test:hover{background:linear-gradient(green,yellow);box-shadow:0 4px 12px black}' }
@@ -32,7 +38,9 @@ try {
       await page.evaluate(() => { globalThis.BC_API = { runtime: { sendMessage: async () => ({ sheets: [] }) } }; });
       await page.evaluate(captureCode.replace('globalThis.__buttonCopyPicker = { restart };', 'globalThis.__buttonCopyPicker = { restart, capture };').replace(/  restart\(\);\s*\}\)\(\);\s*$/, '})();'));
       const capture = await page.locator('.test').evaluate(el => globalThis.__buttonCopyPicker.capture(el));
+      if (item.backdrop) assert.equal(capture.background, item.backdrop, 'Captured source backdrop');
       await copy.setContent(standaloneHtml([capture]));
+      if (item.backdrop) assert.equal(await copy.locator('.source-stage').evaluate(el => getComputedStyle(el).backgroundColor), item.backdrop, 'Source backdrop in exported preview');
       const inspect = item.inspect || '.test';
       const styles = (el, pseudo) => Object.fromEntries(['backgroundImage','backgroundColor','boxShadow'].map(prop => [prop, getComputedStyle(el, pseudo)[prop]]));
       assert.deepEqual(await copy.locator(inspect).evaluate(styles, item.pseudo), await page.locator(inspect).evaluate(styles, item.pseudo), 'Default appearance');
@@ -43,6 +51,7 @@ try {
       await copy.addScriptTag({ content: previewCode });
       await copy.evaluate(capture => window.postMessage({ buttonCopy: true, action: 'render', capture }, '*'), capture);
       await copy.locator('.test').waitFor();
+      if (item.backdrop) assert.equal(await copy.evaluate(() => getComputedStyle(document.body).backgroundColor), item.backdrop, 'Source backdrop in preview');
       await copy.evaluate(() => window.postMessage({ buttonCopy: true, action: 'state', state: 'hover' }, '*'));
       await copy.locator('.test[data-bc-state="hover"]').waitFor();
       assert.deepEqual(await copy.locator(inspect).evaluate(styles, item.pseudo), expected, 'Forced hover preview');

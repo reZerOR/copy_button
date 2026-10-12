@@ -11,7 +11,10 @@ export function animationScript(captures) {
 
 export function standaloneHtml(captures, cleanHtml = c => c.html) {
   const css = captures.map(c => c.css).join('\n');
-  const markup = captures.map(c => `<section class="export-item"><h2>${escapeHtml(c.name)}</h2>${cleanHtml(c)}${c.warnings?.length ? `<details><summary>Capture notes</summary><ul>${c.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('')}</ul></details>` : ''}</section>`).join('\n');
+  const markup = captures.map(c => {
+    const backdrop = typeof c.background === 'string' && /^(#[0-9a-f]{3,8}|rgba?\([\d., %]+\)|transparent)$/i.test(c.background) ? c.background : '#111713';
+    return `<section class="export-item"><h2>${escapeHtml(c.name)}</h2><div class="source-stage" style="background:${escapeHtml(backdrop)};display:inline-block;padding:16px;border-radius:8px">${cleanHtml(c)}</div>${c.warnings?.length ? `<details><summary>Capture notes</summary><ul>${c.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('')}</ul></details>` : ''}</section>`;
+  }).join('\n');
   return `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exported buttons</title><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: https: http:; font-src data: https: http:; connect-src 'none'; base-uri 'none'; form-action 'none'"><style>body{margin:0;background:#111713;color:#e7f0ea;font:14px/1.6 system-ui;padding:40px}main{display:flex;gap:36px;flex-wrap:wrap}.export-item{min-width:200px;padding:24px;border:1px solid #39473e;border-radius:12px}h2{font:500 15px/1.4 system-ui;margin:0 0 28px}details{font:12px/1.6 system-ui;color:#b6c7bc;max-width:50ch;margin-top:28px}summary{cursor:pointer}\n${safeCss(css)}\n</style></head><body><main>${markup}</main><script>${animationScript(captures)}</script></body></html>`;
 }
 

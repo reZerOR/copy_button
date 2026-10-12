@@ -49,6 +49,8 @@ The capture combines computed defaults with readable matched CSS rules, includin
 
 CSS variables and shorthand declarations remain in the captured rules so hover can change gradients, shadows, and inherited values on child elements and pseudo-elements. Positive `:is()` and `:where()` selector groups are expanded before state matching. Capture also reads the containing open shadow-root stylesheets when a button is selected inside one.
 
+Unset variable snapshots retain their invalid state so nested color fallbacks still work. Rewritten selector weights distinguish class rules from element resets, preserving light-wash layers. Previews default to the composited ancestor background color, and exported preview stages use that color too. Choose Dark or Light in the detail view to test another backdrop. Ancestor background images and gradients still need the original page context.
+
 This is not a universal guarantee of identical rendering. Every capture carries notes about website JavaScript and rendering context. Additional notes identify inaccessible stylesheets, missing assets, external state triggers, shadow content, unresolved variables, nested CSS, SVG declarative animation, and canvas content.
 
 - Arbitrary original JavaScript, click actions, framework state, event listeners, unobserved animations, scroll triggers, and animation-library logic are not copied.
@@ -79,6 +81,6 @@ The fixture server opens at `http://127.0.0.1:4173`. Use it to test normal, hove
 
 `tests/browser.mjs` uses Playwright and a full Chromium executable. Install Playwright separately for these integration checks, or provide `BC_PLAYWRIGHT` as an absolute module URL and `BC_BROWSER` as the executable path. Run `node tests/browser.mjs`. The test copies the extension under `test-results` and adds localhost host permissions only to that test copy. Shipping manifests do not include them.
 
-With the same Playwright configuration, run `npm run test:fidelity` to compare default and hover gradients, colors, and shadows against the source in standalone HTML and the forced-state preview. The cases cover changing CSS variables, grouped state selectors, nested fallbacks, variable inheritance, and containing open shadow-root stylesheets.
+With the same Playwright configuration, run `npm run test:fidelity` to compare default and hover gradients, colors, and shadows against the source in standalone HTML and the forced-state preview. The cases cover changing CSS variables, grouped state selectors, nested fallbacks, invalid and intentionally empty variables, variable inheritance, class rules versus element resets, source backdrops, and containing open shadow-root stylesheets.
 
 Generated packages are in `dist`. See `docs/verification.md` for the checks run in this workspace.
