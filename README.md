@@ -47,6 +47,8 @@ Follow Xcode's build and signing steps, then enable the extension in Safari's ex
 
 The capture combines computed defaults with readable matched CSS rules, including pseudo-elements, interaction states, media queries, transitions, keyframes, fonts, and embedded image assets. Running Web Animations API animations are serialized for replay. SVG IDs and animation names are scoped so several exported buttons can coexist.
 
+CSS variables and shorthand declarations remain in the captured rules so hover can change gradients, shadows, and inherited values on child elements and pseudo-elements. Positive `:is()` and `:where()` selector groups are expanded before state matching. Capture also reads the containing open shadow-root stylesheets when a button is selected inside one.
+
 This is not a universal guarantee of identical rendering. Every capture carries notes about website JavaScript and rendering context. Additional notes identify inaccessible stylesheets, missing assets, external state triggers, shadow content, unresolved variables, nested CSS, SVG declarative animation, and canvas content.
 
 - Arbitrary original JavaScript, click actions, framework state, event listeners, unobserved animations, scroll triggers, and animation-library logic are not copied.
@@ -76,5 +78,7 @@ node scripts/serve-fixtures.mjs
 The fixture server opens at `http://127.0.0.1:4173`. Use it to test normal, hover, pressed, focus, disabled, pseudo-element, responsive, and animated buttons. Choosing them must not increment the website action count.
 
 `tests/browser.mjs` uses Playwright and a full Chromium executable. Install Playwright separately for these integration checks, or provide `BC_PLAYWRIGHT` as an absolute module URL and `BC_BROWSER` as the executable path. Run `node tests/browser.mjs`. The test copies the extension under `test-results` and adds localhost host permissions only to that test copy. Shipping manifests do not include them.
+
+With the same Playwright configuration, run `npm run test:fidelity` to compare default and hover gradients, colors, and shadows against the source in standalone HTML and the forced-state preview. The cases cover changing CSS variables, grouped state selectors, nested fallbacks, variable inheritance, and containing open shadow-root stylesheets.
 
 Generated packages are in `dist`. See `docs/verification.md` for the checks run in this workspace.

@@ -19,6 +19,48 @@
     result.push(value.slice(start).trim()); return result;
   }
 
+  // Expand positive selector alternatives before extracting state conditions.
+  // Keep functions inside :not() and :has() intact: expanding those as OR
+  // alternatives would change their meaning.
+  function selectorAlternatives(selector, budget = { remaining: 64 }) {
+    let quote = '', bracket = 0;
+    const functions = [];
+    for (let i = 0; i < selector.length; i++) {
+      const c = selector[i];
+      if (quote) { if (c === quote && selector[i - 1] !== '\\') quote = ''; continue; }
+      if (c === '"' || c === "'") { quote = c; continue; }
+      if (c === '[') bracket++;
+      if (c === ']') bracket--;
+      if (bracket) continue;
+      const match = selector.slice(i).match(/^:(is|where)\(/);
+      if (match && !functions.length) {
+        const start = i + match[0].length;
+        let depth = 1, innerQuote = '', end = start;
+        for (; end < selector.length; end++) {
+          const ch = selector[end];
+          if (innerQuote) { if (ch === innerQuote && selector[end - 1] !== '\\') innerQuote = ''; continue; }
+          if (ch === '"' || ch === "'") innerQuote = ch;
+          else if (ch === '(') depth++;
+          else if (ch === ')' && --depth === 0) break;
+        }
+        if (depth) return [selector];
+        const parts = splitSelectors(selector.slice(start, end));
+        const needsSubject = part => /^:(hover|active|focus|focus-visible|focus-within|disabled|enabled|checked)\b/.test(part);
+        if (parts.length === 1 && !needsSubject(parts[0])) { i = end; continue; }
+        budget.remaining -= parts.length;
+        if (budget.remaining < 0) return [selector];
+        // Retain the functional wrapper so button:is(button:hover) does not
+        // become the unrelated type selector buttonbutton:hover.
+        const alternatives = parts.flatMap(part => selectorAlternatives(selector.slice(0, i) + `:${match[1]}(${needsSubject(part) ? '*' : ''}${part})` + selector.slice(end + 1), budget));
+        // Avoid multiplying an arbitrarily large selector list during capture.
+        return alternatives.length <= 64 ? alternatives : [selector];
+      }
+      if (c === '(') functions.push(i);
+      if (c === ')') functions.pop();
+    }
+    return [selector];
+  }
+
   function absoluteCss(text, base, resources) {
     return text.replace(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*))\s*\)/gi, (all, a, b, c) => {
       const value = (a ?? b ?? c).trim();
@@ -102,8 +144,12 @@
       families.add(computed.fontFamily);
       computed.animationName.split(',').forEach(x => { if (x.trim() !== 'none') usedAnimations.add(x.trim()); });
       const properties = [];
+      const inheritanceParent = source.assignedSlot || source.parentElement || source.getRootNode().host;
+      const inherited = source !== target && inheritanceParent ? getComputedStyle(inheritanceParent) : null;
       for (const prop of computed) {
-        if (prop.startsWith('--')) continue;
+        // Keep inherited variables on the root. Descendants must inherit them
+        // rather than hold a default snapshot that masks the parent's hover.
+        if (prop.startsWith('--') && inherited?.getPropertyValue(prop) === computed.getPropertyValue(prop)) continue;
         // Preserve intrinsic sizing instead of freezing a button's measured pixel size.
         // Explicit author sizes are restored by matching rules below.
         const intrinsic = source === target && ['inline-block', 'inline-flex', 'inline-grid'].includes(computed.display) && ['width', 'height'].includes(prop);
@@ -114,6 +160,8 @@
       for (const pseudo of ['::before', '::after']) {
         const style = getComputedStyle(source, pseudo);
         if (!['none', 'normal'].includes(style.content)) {
+          // Custom properties inherit from the captured element. Freezing them
+          // here would prevent its hover variables from reaching the pseudo.
           const p = [...style].filter(x => !x.startsWith('--')).map(x => `${x}:${absoluteCss(style.getPropertyValue(x), source.baseURI, resources)};`).join('');
           pseudoCss.push(`:where(${rootSelector} [data-bc-node="${key}"])${pseudo}{${p}}`);
         }
@@ -173,7 +221,13 @@
       }
     }
     for (const sheet of [...document.styleSheets, ...(document.adoptedStyleSheets || [])]) scanSheet(sheet);
-    for (const { source } of nodes) if (source.shadowRoot) for (const sheet of [...source.shadowRoot.querySelectorAll('style,link[rel="stylesheet"]')].map(el => el.sheet).filter(Boolean).concat(source.shadowRoot.adoptedStyleSheets || [])) scanSheet(sheet);
+    const shadowRoots = new Set();
+    for (const { source } of nodes) {
+      if (source.shadowRoot) shadowRoots.add(source.shadowRoot);
+      let tree = source.getRootNode();
+      while (tree instanceof ShadowRoot) { shadowRoots.add(tree); tree = tree.host.getRootNode(); }
+    }
+    for (const tree of shadowRoots) for (const sheet of [...tree.querySelectorAll('style,link[rel="stylesheet"]')].map(el => el.sheet).filter(Boolean).concat(tree.adoptedStyleSheets || [])) scanSheet(sheet);
     if (blocked.length) {
       const response = await api.runtime.sendMessage({ type: 'FETCH_STYLES', urls: blocked.map(x => x.url) });
       for (const item of blocked) {
@@ -193,7 +247,7 @@
       return (stripped.match(/#[\w-]+/g)?.length || 0) * 100 + (stripped.match(/\.[\w-]+|\[[^\]]+\]|:(?!:)[\w-]+/g)?.length || 0) * 10 + (stripped.match(/(^|[\s>+~])([a-z][\w-]*)|::[\w-]+/gi)?.length || 0);
     };
     for (const { rule, base, envelopes } of sheets) {
-      for (const selector of splitSelectors(rule.selectorText)) {
+      for (const originalSelector of splitSelectors(rule.selectorText)) for (const selector of selectorAlternatives(originalSelector)) {
         const info = selectorInfo(selector);
         if (/::(?!before|after)/.test(info.plain)) continue;
         for (const { source, key } of nodes) {
@@ -215,20 +269,17 @@
             if (triggerKey !== undefined) root += `:has([data-bc-node="${triggerKey}"]${parts[part].conditions})`;
             else { conditions += parts[part].conditions; warnings.add('A state depends on an element outside the button. Its trigger was mapped to the captured element.'); }
           }
-          const declaration = [];
+          // cssText preserves shorthands containing var(). Their expanded
+          // longhands can be empty in CSSOM until the browser resolves them.
+          const declaration = absoluteCss(rule.style.cssText, base, resources);
           for (const prop of rule.style) {
-            let value = rule.style.getPropertyValue(prop);
-            // Resolve variables using the source node, retaining other responsive units.
-            for (let n = 0; n < 8 && value.includes('var('); n++) value = value.replace(/var\(\s*(--[\w-]+)\s*(?:,\s*([^()]*))?\)/g, (all, name, fallback) => getComputedStyle(source).getPropertyValue(name).trim() || fallback || all);
-            if (value.includes('var(')) { warnings.add('A CSS variable could not be fully resolved. A computed fallback was saved.'); value = getComputedStyle(source).getPropertyValue(prop); }
-            value = absoluteCss(value, base, resources);
-            declaration.push(`${prop}:${value}${rule.style.getPropertyPriority(prop) ? ' !important' : ''};`);
+            const value = rule.style.getPropertyValue(prop);
             if (/^animation/.test(prop)) for (const frame of keyframes) if (value.includes(frame.name)) usedAnimations.add(frame.name);
           }
           // Extra attribute repetitions retain relative specificity after removing source ancestry.
-          const weight = Math.min(30, Math.max(1, Math.ceil(specificity(selector) / 10)));
+          const weight = Math.min(30, Math.max(1, Math.ceil(specificity(originalSelector) / 10)));
           const mapped = `${root} ${`[data-bc-node="${key}"]`.repeat(weight)}${conditions}${info.pseudo}`;
-          let text = `${mapped}{${declaration.join('')}}`;
+          let text = `${mapped}{${declaration}}`;
           for (const env of [...envelopes].reverse()) text = `${env}{${text}}`;
           dynamic.push(text);
         }

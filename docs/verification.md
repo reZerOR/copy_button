@@ -2,6 +2,8 @@
 
 Date: 2026-10-11. Host: Windows. Test data: controlled local fixtures; no user's website content was captured.
 
+Capture fidelity update, 2026-10-12: eight browser regressions compare source and exported default/hover background images, colors, and box shadows. They also compare the forced Hover preview. Covered cases are hover custom properties, positive functional state selectors, type intersections and state-only selector groups, gradient variable fallbacks, inherited variables on pseudo-elements and children, and stylesheets containing a selected button inside an open shadow root. Six cases reproduced a mismatch before their respective fixes. All eight passed afterward. The original Chromium extension integration checks also passed. The reported YouTube button has not been recaptured or compared with the live source.
+
 ## Passed
 
 - Three Node unit tests cover ZIP CRCs/binary assets/UTF-8 filenames, export escaping, and multi-button file separation.
