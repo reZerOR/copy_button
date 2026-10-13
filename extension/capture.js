@@ -143,15 +143,20 @@
       queryContainers.push({ type: style.containerType, name: style.containerName, width: contentSize('width'), height: contentSize('height'), fontSize: style.fontSize, writingMode: style.writingMode });
     }
 
-    // A selected tab's pill can be a positioned sibling rather than a child.
-    // Only include empty, non-interactive decorations that fit its bounds.
-    const decorations = [...(target.parentElement?.children || [])].filter(el => {
+    // A tab indicator may sit beside the whole tablist, above the tab's
+    // immediate parent. Search nearby ancestor siblings without copying tabs.
+    const decorationCandidates = [];
+    for (let parent = target.parentElement, depth = 0; parent && depth < 4 && !['BODY', 'HTML'].includes(parent.tagName); parent = parent.parentElement, depth++) {
+      for (const el of parent.children) if (!el.contains(target)) decorationCandidates.push(el);
+    }
+    const decorations = decorationCandidates.filter(el => {
       if (el === target || IGNORE_TAGS.has(el.tagName) || el.textContent.trim() || el.matches('button,a,input,select,textarea,[role],[tabindex]') || el.querySelector('button,a,input,select,textarea,[role],[tabindex],canvas')) return false;
       const style = getComputedStyle(el), rect = el.getBoundingClientRect();
       if (!['absolute', 'fixed'].includes(style.position) || style.display === 'none' || style.visibility === 'hidden' || !(style.pointerEvents === 'none' || el.getAttribute('aria-hidden') === 'true')) return false;
       const tolerance = 4;
       return rect.width > 0 && rect.height > 0 && Math.abs(rect.left - targetRect.left) <= tolerance && Math.abs(rect.top - targetRect.top) <= tolerance && Math.abs(rect.right - targetRect.right) <= tolerance && Math.abs(rect.bottom - targetRect.bottom) <= tolerance;
-    }).slice(0, 8);
+    }).sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1).slice(0, 8);
+    const captureRoots = new Set([target, ...decorations]);
 
     function sourceBackdrop() {
       const colors = [];
@@ -210,7 +215,7 @@
       computed.animationName.split(',').forEach(x => { if (x.trim() !== 'none') usedAnimations.add(x.trim()); });
       const properties = [];
       const inheritanceParent = source.assignedSlot || source.parentElement || source.getRootNode().host;
-      const inherited = source !== target && inheritanceParent ? getComputedStyle(inheritanceParent) : null;
+      const inherited = !captureRoots.has(source) && inheritanceParent ? getComputedStyle(inheritanceParent) : null;
       const typed = source.computedStyleMap?.();
       const inheritedTyped = inherited ? inheritanceParent.computedStyleMap?.() : null;
       for (const prop of computed) {
@@ -265,10 +270,11 @@
       const dest = copy(source);
       if (!dest) continue;
       const rect = source.getBoundingClientRect();
-      for (const [prop, value] of Object.entries({ position: 'absolute', left: `${rect.left - targetRect.left}px`, top: `${rect.top - targetRect.top}px`, right: 'auto', bottom: 'auto', width: `${rect.width}px`, height: `${rect.height}px`, margin: '0', transform: 'none', pointerEvents: 'none' })) dest.style[prop] = value;
-      content.append(dest);
+      for (const [prop, value] of Object.entries({ position: 'absolute', left: `${rect.left - targetRect.left}px`, top: `${rect.top - targetRect.top}px`, right: 'auto', bottom: 'auto', width: `${rect.width}px`, height: `${rect.height}px`, margin: '0', transform: 'none', 'pointer-events': 'none' })) dest.style.setProperty(prop, value, 'important');
+      if (source.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING) content.insertBefore(dest, nodes[0].dest);
+      else content.append(dest);
     }
-    if (decorations.length) warnings.add('Overlapping decorative siblings were included with the button. Their position was saved at capture time; shared tab-indicator movement is not replayed.');
+    if (decorations.length) warnings.add('Overlapping decorative layers beside the button or its ancestors were included. Their position was saved at capture time; shared tab-indicator movement is not replayed.');
     if (queryContainers.length) {
       clone.style.width = `${targetRect.width}px`; clone.style.height = `${targetRect.height}px`;
       content.style.width = `${targetRect.width}px`; content.style.height = `${targetRect.height}px`;
