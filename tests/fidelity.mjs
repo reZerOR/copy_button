@@ -10,6 +10,16 @@ const captureCode = await readFile(new URL('../extension/capture.js', import.met
 const previewCode = await readFile(new URL('../extension/preview.js', import.meta.url), 'utf8');
 const { standaloneHtml } = await import('../extension/lib/export.js');
 const cases = [
+  { name: 'Inherited typography survives button font resets', css: 'body{font-family:Georgia;font-size:17px;font-weight:600;line-height:1.4;color:purple}@layer base{button{font:inherit;color:inherit}}', markup: '<button class="test">Share</button>', properties: ['fontFamily','fontSize','fontWeight','lineHeight','color'] },
+  { name: 'Inline fills survive layered button resets', css: '@layer base{button{background-color:transparent}}@layer utilities{.test{display:inline-flex}}', markup: '<button class="test" style="background-color:rebeccapurple;display:flex">Upgrade</button>', properties: ['backgroundColor','display'] },
+  { name: 'Inline variables still drive hover on effect layers', css: '@layer base{button{background:transparent}}.test{--fill:red}.test:hover{--fill:green}', markup: '<button class="test" style="background:var(--fill)">Upgrade<span style="background:var(--fill)">Effect</span></button>', inspect: '.test span' },
+  { name: 'Inline SVG paint references remain scoped', css: '', markup: '<button class="test"><svg width="20" height="20"><defs><linearGradient id="paint"><stop stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient></defs><rect width="20" height="20" style="fill:url(\'#paint\')"/></svg></button>', localPaint: true },
+  { name: 'Inline CSS animation names remain scoped', css: '@keyframes inline-pulse{from{opacity:.5}to{opacity:1}}', markup: '<button class="test" style="animation:inline-pulse 2s infinite">Test</button>', inlineAnimation: true },
+  { name: 'Important inline page positioning is normalized for reuse', css: '', markup: '<button class="test" style="position:fixed!important;left:100px!important;top:100px!important;background:red">Test</button>', normalizedPosition: true },
+  { name: 'Wide external container keeps toolbar icons hidden', css: '.toolbar{container-type:inline-size;width:900px}.icon{display:block}@container(width >= 768px){.icon{display:none}}', markup: '<div class="toolbar"><button class="test">Publish<span class="icon">Icon</span></button></div>', inspect: '.icon', properties: ['display'] },
+  { name: 'Narrow external container keeps toolbar icons visible', css: '.toolbar{container-type:inline-size;width:500px}.icon{display:block}@container(width >= 768px){.icon{display:none}}', markup: '<div class="toolbar"><button class="test">Publish<span class="icon">Icon</span></button></div>', inspect: '.icon', properties: ['display'] },
+  { name: 'Named external containers preserve independent query contexts', css: '.outer{container:outer / inline-size;width:1000px}.inner{container:inner / inline-size;width:500px}.icon{display:block;background:red}@container outer (width >= 768px){.icon{background:green}}@container inner (width >= 768px){.icon{display:none}}', markup: '<div class="outer"><div class="inner"><button class="test">Publish<span class="icon">Icon</span></button></div></div>', inspect: '.icon', properties: ['display','backgroundColor'] },
+  { name: 'Overlapping decorative sibling retains selected tab pill', css: '.tabs{position:relative;display:inline-block}.test{position:relative;z-index:1;width:90px;height:28px;background:transparent;border:0}.pill{position:absolute;inset:0;pointer-events:none;background:blue;border-radius:999px;box-shadow:inset 0 0 0 1px cyan}', markup: '<div class="tabs"><span class="pill" aria-hidden="true"></span><button class="test" role="tab" aria-selected="true">Preview</button></div>', inspect: '.pill' },
   { name: 'Hover variables preserve gradient and shadow', css: '.test{--fill:linear-gradient(red,blue);--shadow:none;background:var(--fill);box-shadow:var(--shadow)}.test:hover{--fill:linear-gradient(green,yellow);--shadow:0 4px 12px black}', markup: '<button class="test">Test</button>' },
   { name: 'Functional state selectors preserve hover', css: '.test{background:red}:is(.test:hover,.test:focus-visible){background:green;box-shadow:0 4px 12px black}', markup: '<button class="test">Test</button>' },
   { name: 'Functional selectors preserve type intersections', css: '.test{background:red}button:is(button:hover,a:focus-visible){background:green;box-shadow:0 4px 12px black}', markup: '<button class="test">Test</button>' },
@@ -38,6 +48,7 @@ try {
   for (const item of selectedCases) {
     const page = await browser.newPage();
     const copy = await browser.newPage();
+    page.setDefaultTimeout(3000); copy.setDefaultTimeout(3000);
     try {
       await page.goto(origin); await copy.goto(origin);
       await page.setContent(`<style>${item.css}</style>${item.markup}`);
@@ -48,13 +59,21 @@ try {
       const capture = await page.locator('.test').evaluate(el => globalThis.__buttonCopyPicker.capture(el));
       if (item.backdrop) assert.equal(capture.background, item.backdrop, 'Captured source backdrop');
       await copy.setContent(standaloneHtml([capture]));
+      if (item.localPaint) assert.equal(await copy.locator('rect').evaluate(el => { const id = el.style.fill.match(/#([^"')]+)/)?.[1]; return !!id && !!document.getElementById(id); }), true, 'Inline paint points to the copied gradient');
+      if (item.inlineAnimation) assert.equal(await copy.locator('.test').evaluate(el => el.getAnimations().some(a => a.animationName?.startsWith('bc-'))), true, 'Inline animation uses the scoped keyframes');
+      if (item.normalizedPosition) assert.equal(await copy.locator('.test').evaluate(el => getComputedStyle(el).position), 'relative', 'Inline positioning cannot pin the exported button to the page');
+      if (item.inspect === '.pill') {
+        const offset = el => { const r = el.getBoundingClientRect(), b = document.querySelector('.test').getBoundingClientRect(); return [r.left-b.left,r.top-b.top,r.width,r.height]; };
+        assert.deepEqual(await copy.locator('.pill').evaluate(offset), await page.locator('.pill').evaluate(offset), 'Decoration stays aligned with the selected button');
+      }
       if (item.backdrop) assert.equal(await copy.locator('.source-stage').evaluate(el => getComputedStyle(el).backgroundColor), item.backdrop, 'Source backdrop in exported preview');
       const inspect = item.inspect || '.test';
-      const styles = (el, pseudo) => Object.fromEntries(['backgroundImage','backgroundColor','boxShadow'].map(prop => [prop, getComputedStyle(el, pseudo)[prop]]));
-      assert.deepEqual(await copy.locator(inspect).evaluate(styles, item.pseudo), await page.locator(inspect).evaluate(styles, item.pseudo), 'Default appearance');
+      const styles = (el, options) => Object.fromEntries(options.properties.map(prop => [prop, getComputedStyle(el, options.pseudo)[prop]]));
+      const options = { pseudo: item.pseudo, properties: item.properties || ['backgroundImage','backgroundColor','boxShadow'] };
+      assert.deepEqual(await copy.locator(inspect).evaluate(styles, options), await page.locator(inspect).evaluate(styles, options), 'Default appearance');
       await page.locator('.test').hover(); await copy.locator('.test').hover();
-      const expected = await page.locator(inspect).evaluate(styles, item.pseudo);
-      assert.deepEqual(await copy.locator(inspect).evaluate(styles, item.pseudo), expected, 'Hover appearance');
+      const expected = await page.locator(inspect).evaluate(styles, options);
+      assert.deepEqual(await copy.locator(inspect).evaluate(styles, options), expected, 'Hover appearance');
       await copy.setContent('<div id="mount"></div>');
       await copy.addScriptTag({ content: previewCode });
       await copy.evaluate(capture => window.postMessage({ buttonCopy: true, action: 'render', capture }, '*'), capture);
@@ -62,7 +81,7 @@ try {
       if (item.backdrop) assert.equal(await copy.evaluate(() => getComputedStyle(document.body).backgroundColor), item.backdrop, 'Source backdrop in preview');
       await copy.evaluate(() => window.postMessage({ buttonCopy: true, action: 'state', state: 'hover' }, '*'));
       await copy.locator('.test[data-bc-state="hover"]').waitFor();
-      assert.deepEqual(await copy.locator(inspect).evaluate(styles, item.pseudo), expected, 'Forced hover preview');
+      assert.deepEqual(await copy.locator(inspect).evaluate(styles, options), expected, 'Forced hover preview');
       console.log(`PASS: ${item.name}`);
     } catch (error) { failures++; console.error(`FAIL: ${item.name}\n${error.message}`); }
     finally { await page.close(); await copy.close(); }

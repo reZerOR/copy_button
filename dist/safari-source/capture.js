@@ -129,6 +129,29 @@
     const css = [`@layer ${DEFAULT_LAYER};`, `${rootSelector}{display:inline-block;isolation:isolate;position:relative;text-align:left;line-height:normal;color-scheme:normal;}`];
     const pseudoCss = [], usedAnimations = new Set();
     let count = 0;
+    const targetRect = target.getBoundingClientRect();
+    const queryContainers = [];
+    for (let ancestor = target.parentElement || target.getRootNode().host; ancestor; ancestor = ancestor.parentElement || ancestor.getRootNode().host) {
+      const style = getComputedStyle(ancestor);
+      if (style.containerType === 'normal') continue;
+      const contentSize = axis => {
+        const horizontal = axis === 'width';
+        const edges = horizontal ? ['Left', 'Right'] : ['Top', 'Bottom'];
+        const inset = style.boxSizing === 'border-box' ? edges.reduce((sum, edge) => sum + parseFloat(style[`padding${edge}`]) + parseFloat(style[`border${edge}Width`]), 0) : 0;
+        return Math.max(0, parseFloat(style[axis]) - inset) || 0;
+      };
+      queryContainers.push({ type: style.containerType, name: style.containerName, width: contentSize('width'), height: contentSize('height'), fontSize: style.fontSize, writingMode: style.writingMode });
+    }
+
+    // A selected tab's pill can be a positioned sibling rather than a child.
+    // Only include empty, non-interactive decorations that fit its bounds.
+    const decorations = [...(target.parentElement?.children || [])].filter(el => {
+      if (el === target || IGNORE_TAGS.has(el.tagName) || el.textContent.trim() || el.matches('button,a,input,select,textarea,[role],[tabindex]') || el.querySelector('button,a,input,select,textarea,[role],[tabindex],canvas')) return false;
+      const style = getComputedStyle(el), rect = el.getBoundingClientRect();
+      if (!['absolute', 'fixed'].includes(style.position) || style.display === 'none' || style.visibility === 'hidden' || !(style.pointerEvents === 'none' || el.getAttribute('aria-hidden') === 'true')) return false;
+      const tolerance = 4;
+      return rect.width > 0 && rect.height > 0 && Math.abs(rect.left - targetRect.left) <= tolerance && Math.abs(rect.top - targetRect.top) <= tolerance && Math.abs(rect.right - targetRect.right) <= tolerance && Math.abs(rect.bottom - targetRect.bottom) <= tolerance;
+    }).slice(0, 8);
 
     function sourceBackdrop() {
       const colors = [];
@@ -171,6 +194,9 @@
           } catch { dest.removeAttribute(attr.name); }
         }
       }
+      // Inline declarations have their own cascade priority. A low-priority
+      // computed snapshot cannot replace them when a source reset is copied.
+      if (source.style.cssText) dest.setAttribute('style', absoluteCss(source.style.cssText, source.baseURI, resources));
       if (dest.tagName === 'BUTTON') dest.setAttribute('type', 'button');
       if (dest.tagName === 'INPUT') {
         if (!['button', 'submit', 'reset', 'checkbox', 'radio'].includes(source.type)) warnings.add('This selection contains a form field. Its current value is omitted.');
@@ -228,7 +254,34 @@
       }
       return dest;
     }
-    clone.append(copy(target));
+    const content = decorations.length || queryContainers.length ? document.createElement('div') : clone;
+    if (content !== clone) content.style.cssText = 'position:relative;display:inline-block;';
+    // Source resets such as font:inherit must inherit the source text context,
+    // rather than the export page's font or a query wrapper's font size.
+    const targetStyle = getComputedStyle(target);
+    for (const prop of ['font-family', 'font-size', 'font-weight', 'font-style', 'font-stretch', 'line-height', 'letter-spacing', 'word-spacing', 'color', 'color-scheme', 'direction', 'writing-mode', 'text-transform']) content.style.setProperty(prop, targetStyle.getPropertyValue(prop));
+    content.append(copy(target));
+    for (const source of decorations) {
+      const dest = copy(source);
+      if (!dest) continue;
+      const rect = source.getBoundingClientRect();
+      for (const [prop, value] of Object.entries({ position: 'absolute', left: `${rect.left - targetRect.left}px`, top: `${rect.top - targetRect.top}px`, right: 'auto', bottom: 'auto', width: `${rect.width}px`, height: `${rect.height}px`, margin: '0', transform: 'none', pointerEvents: 'none' })) dest.style[prop] = value;
+      content.append(dest);
+    }
+    if (decorations.length) warnings.add('Overlapping decorative siblings were included with the button. Their position was saved at capture time; shared tab-indicator movement is not replayed.');
+    if (queryContainers.length) {
+      clone.style.width = `${targetRect.width}px`; clone.style.height = `${targetRect.height}px`;
+      content.style.width = `${targetRect.width}px`; content.style.height = `${targetRect.height}px`;
+      let parent = clone;
+      for (const context of [...queryContainers].reverse()) {
+        const wrapper = document.createElement('div');
+        Object.assign(wrapper.style, { containerType: context.type, containerName: context.name, width: `${context.width}px`, height: `${context.height}px`, fontSize: context.fontSize, writingMode: context.writingMode, position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' });
+        parent.append(wrapper); parent = wrapper;
+      }
+      parent.append(content);
+      content.style.pointerEvents = 'auto';
+      warnings.add('Ancestor query-container names and dimensions were preserved at capture time. These containers keep their source size when the preview viewport changes.');
+    } else if (content !== clone) clone.append(content);
     css.push(...pseudoCss);
     // Scope SVG IDs and local references so multiple exported buttons can coexist.
     const ids = new Map();
@@ -238,6 +291,7 @@
       for (const [id, replacement] of ids) {
         if (value === `#${id}`) value = `#${replacement}`;
         value = value.split(`url(#${id})`).join(`url(#${replacement})`);
+        value = value.split(`url("#${id}")`).join(`url("#${replacement}")`).split(`url('#${id}')`).join(`url('#${replacement}')`);
       }
       if (value !== attr.value) node.setAttribute(attr.name, value);
     }
@@ -275,7 +329,7 @@
         if (rule.cssRules) {
           let header = rule.cssText.slice(0, rule.cssText.indexOf('{')).trim();
           if (/^@(media|supports|container|layer|starting-style)\b/.test(header)) {
-            if (header.startsWith('@container')) warnings.add('Container queries depend on the destination layout. Compare responsive previews after export.');
+            if (header.startsWith('@container') && !queryContainers.length) warnings.add('Container queries depend on the destination layout. Compare responsive previews after export.');
             if (header === '@layer') header = `@layer ${scope}-anonymous-${anonymousLayers++}`;
             if (header.startsWith('@layer')) rememberLayer(`${header}{}`, envelopes);
             visit(rule.cssRules, base, [...envelopes, header], parentSelector);
@@ -382,7 +436,10 @@
     }
     css.push(...dynamic);
     if (['absolute', 'fixed'].includes(getComputedStyle(target).position)) {
-      css.push(`${rootSelector}>[data-bc-node="0"]{position:relative!important;inset:auto!important;}`);
+      const style = nodes[0].dest.style;
+      style.setProperty('position', 'relative', 'important');
+      for (const prop of ['inset', 'inset-inline', 'inset-block', 'left', 'right', 'top', 'bottom']) style.setProperty(prop, 'auto', 'important');
+      css.push(`${rootSelector} [data-bc-node="0"]{position:relative!important;inset:auto!important;}`);
       warnings.add('The button used absolute or fixed page positioning. Its placement was made relative for reuse; internal positioning is preserved.');
     }
     for (const face of fontFaces) if ([...families].some(f => f.toLowerCase().includes(face.family.replaceAll('"', '').replaceAll("'", '').toLowerCase()))) css.unshift(absoluteCss(face.text, face.base, resources));
@@ -391,7 +448,9 @@
     for (const [id, replacement] of ids) finalCss = finalCss.split(`url(#${id})`).join(`url(#${replacement})`).split(`url("#${id}")`).join(`url("#${replacement}")`);
     for (const frame of keyframes) if (usedAnimations.has(frame.name)) {
       const escaped = frame.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      finalCss = finalCss.replace(new RegExp(`(?<![\\w-])${escaped}(?![\\w-])`, 'g'), `${scope}-${frame.name}`);
+      const pattern = new RegExp(`(?<![\\w-])${escaped}(?![\\w-])`, 'g');
+      finalCss = finalCss.replace(pattern, `${scope}-${frame.name}`);
+      for (const node of clone.querySelectorAll('[style]')) node.setAttribute('style', node.getAttribute('style').replace(pattern, `${scope}-${frame.name}`));
     }
     const animations = [];
     for (const { source, key } of nodes) for (const animation of source.getAnimations()) {

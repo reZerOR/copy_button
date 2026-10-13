@@ -53,10 +53,12 @@ Unset variable snapshots retain their invalid state so nested color fallbacks st
 
 Computed defaults use a lowest-priority cascade layer so layered source hover rules can override them. Native nested CSS selectors and nested media/supports declarations are traversed and flattened. Source layer ordering and anonymous layer blocks are retained.
 
+Inline declarations retain their original cascade priority, including variable-based fills and effect layers. Inherited text styles retain the source typography when button rules use `font: inherit`. Ancestor size-query containers retain their names and captured content dimensions without expanding the exported button's footprint. Their sizes remain fixed when changing the preview viewport. Empty, positioned decorative siblings that match the selected button's bounds are included, which covers a selected tab's separate highlight pill. Shared indicator movement is not replayed. Reload the extension and recapture older buttons to use these fixes; existing library entries retain their saved data.
+
 This is not a universal guarantee of identical rendering. Every capture carries notes about website JavaScript and rendering context. Additional notes identify inaccessible stylesheets, missing assets, external state triggers, shadow content, unresolved variables, nested CSS, SVG declarative animation, and canvas content.
 
 - Arbitrary original JavaScript, click actions, framework state, event listeners, unobserved animations, scroll triggers, and animation-library logic are not copied.
-- CSS selector specificity is reconstructed approximately; advanced selectors and layer names from different source sites may differ when combined. Inherited page layout, ancestor variable states, and container query contexts are not reproduced wholesale.
+- CSS selector specificity is reconstructed approximately; advanced selectors and layer names from different source sites may differ when combined. Inherited page layout, ancestor variable states, and style-query contexts are not reproduced wholesale. Ancestor size-query containers use their captured dimensions.
 - Open shadow content is flattened. Closed shadow roots and custom element internals cannot be guaranteed.
 - Fonts/images are embedded when the servers and browser permissions allow downloading them. Use **Allow resources and retry** for the specific affected domains. Recapture after allowing unreadable stylesheet domains to recover their rules.
 - A missing asset remains an external dependency in exports and appears in the notes. Previews block external resources, so unavailable fonts and images may appear differently until embedded.
