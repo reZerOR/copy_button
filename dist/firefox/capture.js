@@ -117,6 +117,13 @@
     return replaced ? result : `:is(${parent}) ${result}`;
   }
 
+  function sourceLineHeight(source, computed, typed = source.computedStyleMap?.()) {
+    const value = typed?.get('line-height');
+    // getComputedStyle resolves 1.5 to pixels. Inheriting that length moves
+    // smaller labels inside their saved boxes; Typed OM retains the number.
+    return value?.unit === 'number' ? String(value) : computed.getPropertyValue('line-height');
+  }
+
   async function capture(target) {
     const scope = `bc-${crypto.randomUUID()}`;
     const rootSelector = `[data-bc-root="${scope}"]`;
@@ -226,7 +233,7 @@
         // Preserve intrinsic sizing instead of freezing a button's measured pixel size.
         // Explicit author sizes are restored by matching rules below.
         const intrinsic = source === target && ['inline-block', 'inline-flex', 'inline-grid'].includes(computed.display) && ['width', 'height'].includes(prop);
-        let value = intrinsic ? 'auto' : absoluteCss(computed.getPropertyValue(prop), source.baseURI, resources);
+        let value = intrinsic ? 'auto' : prop === 'line-height' ? sourceLineHeight(source, computed, typed) : absoluteCss(computed.getPropertyValue(prop), source.baseURI, resources);
         // CSSOM serializes both a guaranteed-invalid variable and an authored
         // empty variable as "". Defining the invalid one as empty disables var()
         // fallbacks. Typed OM distinguishes them; initial restores invalidity.
@@ -265,6 +272,7 @@
     // rather than the export page's font or a query wrapper's font size.
     const targetStyle = getComputedStyle(target);
     for (const prop of ['font-family', 'font-size', 'font-weight', 'font-style', 'font-stretch', 'line-height', 'letter-spacing', 'word-spacing', 'color', 'color-scheme', 'direction', 'writing-mode', 'text-transform']) content.style.setProperty(prop, targetStyle.getPropertyValue(prop));
+    content.style.lineHeight = sourceLineHeight(target, targetStyle);
     content.append(copy(target));
     for (const source of decorations) {
       const dest = copy(source);
@@ -528,9 +536,20 @@
     host.style.cssText = 'all:initial!important;position:fixed!important;inset:0!important;z-index:2147483647!important;pointer-events:none!important;';
     shadow = host.attachShadow({ mode: 'closed' });
     shadow.innerHTML = `<style>
-      :host{color-scheme:dark}*{box-sizing:border-box}.outline{position:fixed;outline:2px solid #62d6a5;border-radius:5px;pointer-events:none}.panel{pointer-events:auto;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);width:min(650px,calc(100vw - 32px));background:#111915;color:#eff7f2;border:1px solid #3d5547;border-radius:14px;padding:18px 20px;font:14px/1.5 system-ui;box-shadow:0 12px 40px #0006}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}strong{font-size:16px;margin-right:auto}p{margin:8px 0 14px;color:#b8cbbf}button{font:inherit;color:inherit;background:#233329;border:1px solid #4d6557;border-radius:7px;padding:8px 13px;cursor:pointer}button:hover{background:#334b3c}button:focus-visible{outline:2px solid #8de4bc;outline-offset:3px}button.primary{background:#004225}button:disabled{opacity:.5;cursor:default}.hint{font-size:12px;color:#b8cbbf;margin-bottom:0}[hidden]{display:none!important}
+      :host{color-scheme:light;--bc-bg:#f7f9f5;--bc-ink:#202b23;--bc-muted:#56634f;--bc-surface:#e9eee6;--bc-hover:#dde6d9;--bc-accent:#004225;--bc-accent-hover:#135a37;--bc-on-accent:#fff;--bc-focus:#25834b}
+      :host([data-theme="dark"]){color-scheme:dark;--bc-bg:#1e251d;--bc-ink:#edf2e8;--bc-muted:#b0bda6;--bc-surface:#293227;--bc-hover:#35412f;--bc-accent:#b9d7a6;--bc-accent-hover:#cce8bb;--bc-on-accent:#1a2d14;--bc-focus:#b9d7a6}
+      *{box-sizing:border-box}.outline{position:fixed;outline:2px solid var(--bc-focus);border-radius:5px;pointer-events:none}
+      .panel{pointer-events:auto;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);width:min(650px,calc(100vw - 32px));background:var(--bc-bg);color:var(--bc-ink);border:0;border-radius:12px;padding:20px 24px;font:14px/1.5 "Segoe UI",system-ui,sans-serif;box-shadow:0 12px 48px #14281030}
+      .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}strong{font-size:18px;letter-spacing:-.03em;margin-right:auto}p{margin:10px 0 18px;color:var(--bc-muted)}
+      button{font:inherit;font-weight:600;color:var(--bc-ink);background:var(--bc-surface);border:0;border-radius:8px;padding:10px 14px;cursor:pointer;transition:background .16s ease-out,transform .16s ease-out}button:hover{background:var(--bc-hover)}button:active:not(:disabled){transform:translateY(1px)}button:focus-visible{outline:2px solid var(--bc-focus);outline-offset:3px}button.primary{background:var(--bc-accent);color:var(--bc-on-accent)}button.primary:hover:not(:disabled){background:var(--bc-accent-hover)}button:disabled{opacity:.42;cursor:default}.hint{font-size:13px;color:var(--bc-muted);margin:16px 0 0}[hidden]{display:none!important}
+      @media(max-width:480px){.panel{padding:16px;bottom:16px}button{font-size:13px;padding:10px 12px}}
+      @media(prefers-reduced-motion:reduce){button{transition:none}}
       </style><div class="outline" hidden></div><section class="panel" aria-label="Button Copy picker"><div class="row"><strong>Choose a button</strong><button id="close" aria-label="Close picker">Close</button></div><p id="status" role="status">Point at a button and click to select it. The website action is blocked while choosing.</p><div class="row"><button id="save" class="primary" disabled>Save button</button><button id="again">Choose another</button><button id="parent">Select parent</button><button id="library">Open library</button></div><p class="hint">Alt + click selects a custom element. Escape closes the picker. Embedded frames must be opened in their own tab.</p></section>`;
     highlight = shadow.querySelector('.outline'); panel = shadow.querySelector('.panel'); status = shadow.querySelector('#status'); save = shadow.querySelector('#save');
+    const pickerHost = host;
+    api.storage.local.get('appearance').then(store => {
+      pickerHost.dataset.theme = store.appearance === 'dark' ? 'dark' : 'light';
+    }).catch(() => {});
     shadow.querySelector('#close').onclick = () => { if (!busy) cleanup(); };
     shadow.querySelector('#again').onclick = () => { if (busy) return; selected = null; save.disabled = true; highlight.hidden = true; status.textContent = 'Point at the next button and click to select it.'; };
     shadow.querySelector('#parent').onclick = () => {

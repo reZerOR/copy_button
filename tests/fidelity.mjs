@@ -10,6 +10,9 @@ const captureCode = await readFile(new URL('../extension/capture.js', import.met
 const previewCode = await readFile(new URL('../extension/preview.js', import.meta.url), 'utf8');
 const { standaloneHtml } = await import('../extension/lib/export.js');
 const cases = [
+  { name: 'Icon label alignment preserves inherited unitless line height', css: 'body{font:16px/1.5 Arial}.test{font:inherit;display:inline-flex;align-items:center;height:28px}.icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px}.label{font-size:14px;line-height:inherit}', markup: '<button class="test"><span class="icon">+</span><span class="label">Preview</span></button>', inspect: '.label', properties: ['lineHeight','fontSize','height'], pressed: true },
+  { name: 'Icon label alignment preserves inherited pixel line height', css: 'body{font:16px/24px Arial}.test{font:inherit;display:inline-flex;align-items:center;height:28px}.label{font-size:14px;line-height:inherit}', markup: '<button class="test"><span class="label">Preview</span></button>', inspect: '.label', properties: ['lineHeight','fontSize','height'], pressed: true },
+  { name: 'Icon label alignment preserves resolved percentage line height', css: 'body{font-size:16px;line-height:150%}.test{font:inherit;display:inline-flex;align-items:center;height:28px}.label{font-size:14px;line-height:inherit}', markup: '<button class="test"><span class="label">Preview</span></button>', inspect: '.label', properties: ['lineHeight','fontSize','height'], pressed: true },
   { name: 'Inherited typography survives button font resets', css: 'body{font-family:Georgia;font-size:17px;font-weight:600;line-height:1.4;color:purple}@layer base{button{font:inherit;color:inherit}}', markup: '<button class="test">Share</button>', properties: ['fontFamily','fontSize','fontWeight','lineHeight','color'] },
   { name: 'Inline fills survive layered button resets', css: '@layer base{button{background-color:transparent}}@layer utilities{.test{display:inline-flex}}', markup: '<button class="test" style="background-color:rebeccapurple;display:flex">Upgrade</button>', properties: ['backgroundColor','display'] },
   { name: 'Inline variables still drive hover on effect layers', css: '@layer base{button{background:transparent}}.test{--fill:red}.test:hover{--fill:green}', markup: '<button class="test" style="background:var(--fill)">Upgrade<span style="background:var(--fill)">Effect</span></button>', inspect: '.test span' },
@@ -88,6 +91,11 @@ try {
       await copy.evaluate(() => window.postMessage({ buttonCopy: true, action: 'state', state: 'hover' }, '*'));
       await copy.locator('.test[data-bc-state="hover"]').waitFor();
       assert.deepEqual(await copy.locator(inspect).evaluate(styles, options), expected, 'Forced hover preview');
+      if (item.pressed) {
+        await copy.evaluate(() => window.postMessage({ buttonCopy: true, action: 'state', state: 'active' }, '*'));
+        await copy.locator('.test[data-bc-state="active"]').waitFor();
+        assert.deepEqual(await copy.locator(inspect).evaluate(styles, options), expected, 'Pressed label alignment');
+      }
       console.log(`PASS: ${item.name}`);
     } catch (error) { failures++; console.error(`FAIL: ${item.name}\n${error.message}`); }
     finally { await page.close(); await copy.close(); }

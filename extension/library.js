@@ -57,7 +57,7 @@ function render() {
   if (captures.length && !list.length) {
     $('#empty h2').textContent = 'No buttons match this view.'; $('#empty p').textContent = 'Try another name, website, or filter.'; $('#empty-choose').textContent = 'Clear search and filters';
   } else {
-    $('#empty h2').textContent = 'A place for the buttons you find.'; $('#empty p').textContent = 'Open a website, choose a button, and save it here. You can test its states and export the code.'; $('#empty-choose').textContent = 'Choose your first button';
+    $('#empty h2').textContent = 'Start with a button.'; $('#empty p').textContent = 'Find one you like. Save it here, try its states, and take the code into your next project.'; $('#empty-choose').textContent = 'Choose your first button';
   }
   for (const c of list) {
     const card = document.createElement('article'); card.className = 'button-card'; card.dataset.id = c.id;

@@ -41,6 +41,19 @@ try {
   await library.goto(`chrome-extension://${id}/library.html`);
   await library.locator('#empty-choose').waitFor();
   assert.equal(await library.locator('#total').textContent(), '0');
+  assert.equal(await library.locator('html').getAttribute('data-theme'), 'light');
+  await library.locator('[data-theme-switch]').click();
+  assert.equal(await library.locator('html').getAttribute('data-theme'), 'dark');
+  const appearancePopup = await context.newPage();
+  await appearancePopup.goto(`chrome-extension://${id}/popup.html`);
+  await appearancePopup.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
+  await appearancePopup.locator('[data-theme-switch]').click();
+  await library.waitForFunction(() => document.documentElement.dataset.theme === 'light');
+  await library.reload();
+  await library.waitForFunction(() => document.documentElement.dataset.theme === 'light');
+  assert.equal(await worker.evaluate(async () => (await chrome.storage.local.get('appearance')).appearance), 'light', 'Appearance persists and synchronizes across extension pages');
+  await appearancePopup.close();
+  await library.locator('[data-theme-switch]').click();
   const page = await context.newPage(); await page.goto(origin);
   const cdp = await context.newCDPSession(page);
   async function clickPicker(buttonId) {
@@ -58,12 +71,15 @@ try {
     const tabId = await worker.evaluate(async url => (await chrome.tabs.query({})).find(t => t.url?.startsWith(url)).id, origin);
     const result = await library.evaluate(tabId => chrome.runtime.sendMessage({ type: 'START_CAPTURE', tabId }), tabId);
     assert.equal(result.ok, true, result.error);
+    const appearance = await library.locator('html').getAttribute('data-theme');
+    await page.waitForFunction(theme => document.querySelector('[data-button-copy-overlay]')?.dataset.theme === theme, appearance);
     await page.locator(selector).click({ force: true });
     await clickPicker('save');
     await library.waitForFunction(n => Number(document.querySelector('#total').textContent) === n, before + 1);
     await clickPicker('close');
   }
   await pick('#forest');
+  await library.locator('[data-theme-switch]').click();
   const stored = await worker.evaluate(async () => (await chrome.storage.local.get('captures')).captures);
   assert.equal(stored.length, 1); assert.ok(stored[0].states.includes('hover')); assert.ok(stored[0].states.includes('active'));
   assert.equal(await page.locator('#actions').textContent(), '0', 'Picker must not run original website click handlers');
@@ -144,6 +160,7 @@ try {
   await library.bringToFront();
   await library.locator('#grid iframe').evaluateAll(frames => frames.forEach(frame => frame.loading = 'eager'));
   for (let index = 0; index < await library.locator('#grid iframe').count(); index++) await library.locator('#grid iframe').nth(index).contentFrame().locator('[data-bc-root]').waitFor();
+  await library.evaluate(() => window.scrollTo(0, 0));
   await library.screenshot({ path: path.join(root, '.impeccable', 'review', 'desktop.png'), fullPage: true });
   await library.setViewportSize({ width: 900, height: 850 });
   await library.locator('.button-card').last().scrollIntoViewIfNeeded();
@@ -161,7 +178,38 @@ try {
   await library.frameLocator('#detail-preview iframe').locator('button').waitFor();
   await library.screenshot({ path: path.join(root, '.impeccable', 'review', 'detail.png'), fullPage: true });
   const popup = await context.newPage(); await popup.goto(`chrome-extension://${id}/popup.html`);
-  await popup.setViewportSize({ width: 352, height: 440 }); await popup.screenshot({ path: path.join(root, '.impeccable', 'review', 'popup.png') });
+  await popup.setViewportSize({ width: 368, height: 460 }); await popup.screenshot({ path: path.join(root, '.impeccable', 'review', 'popup.png') });
+  await library.locator('#close-detail').click();
+  await library.locator('[data-theme-switch]').click();
+  await popup.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
+  await library.bringToFront();
+  await library.evaluate(() => Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {}))));
+  await library.evaluate(() => window.scrollTo(0, 0));
+  await library.screenshot({ path: path.join(root, '.impeccable', 'review', 'dark.png'), fullPage: true });
+  await popup.screenshot({ path: path.join(root, '.impeccable', 'review', 'popup-dark.png') });
+  const help = await context.newPage(); await help.goto(`chrome-extension://${id}/help.html`);
+  await help.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
+  await help.locator('[data-theme-switch]').click();
+  await library.waitForFunction(() => document.documentElement.dataset.theme === 'light');
+  await help.screenshot({ path: path.join(root, '.impeccable', 'review', 'help.png'), fullPage: true });
+  await help.close();
+  for (const width of [1440, 768, 390]) {
+    await library.setViewportSize({ width, height: 960 });
+    assert.equal(await library.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `Library fits a ${width}px viewport`);
+    await library.locator('.card-info').filter({ hasText: 'Forest capture' }).click();
+    assert.equal(await library.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `Details fit a ${width}px viewport`);
+    if (width === 390) await library.screenshot({ path: path.join(root, '.impeccable', 'review', 'mobile-detail.png') });
+    await library.locator('#close-detail').click();
+  }
+  await library.evaluate(() => window.scrollTo(0, 0));
+  await library.bringToFront();
+  await library.locator('#grid iframe').first().contentFrame().locator('[data-bc-root]').waitFor();
+  await library.waitForTimeout(200);
+  await library.screenshot({ path: path.join(root, '.impeccable', 'review', 'mobile.png') });
+  await library.setViewportSize({ width: 1440, height: 960 });
+  await library.emulateMedia({ reducedMotion: 'reduce' });
+  assert.equal(await library.locator('.button-card').first().evaluate(el => getComputedStyle(el).animationName), 'none', 'Reduced motion removes decorative entrance animation');
+  await library.emulateMedia({ reducedMotion: 'no-preference' });
   assert.deepEqual(errors, [], 'Library and sandbox previews must have no script or CSP errors');
   const icon = await readFile(path.join(root, 'extension', 'icons', '48.png'));
   const assetServer = http.createServer((request, response) => {

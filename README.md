@@ -1,6 +1,6 @@
 # Button Copy
 
-A desktop browser extension for manually collecting website buttons. The library uses a dark theme and #004225 forest green. Captured buttons retain their source colors.
+A desktop browser extension for manually collecting website buttons. The interface uses a light studio theme with #004225 forest-green actions and an optional dark theme. Switch themes in the popup, library, or help page; the picker follows your choice. Captured buttons retain their source colors.
 
 ## Install in Chrome, Edge, Brave, Opera, or Vivaldi
 
@@ -54,6 +54,8 @@ Unset variable snapshots retain their invalid state so nested color fallbacks st
 Computed defaults use a lowest-priority cascade layer so layered source hover rules can override them. Native nested CSS selectors and nested media/supports declarations are traversed and flattened. Source layer ordering and anonymous layer blocks are retained.
 
 Inline declarations retain their original cascade priority, including variable-based fills and effect layers. Inherited text styles retain the source typography when button rules use `font: inherit`. Ancestor size-query containers retain their names and captured content dimensions without expanding the exported button's footprint. Their sizes remain fixed when changing the preview viewport. Empty, positioned decorative layers beside the button or nearby ancestors are included when they match the selected button's bounds. This preserves tab highlights positioned outside the tablist, including their own variables and paint order. Other tabs and link controls are excluded. Shared indicator movement is not replayed. Reload the extension and recapture older buttons to use these fixes; existing library entries retain their saved data.
+
+Unitless line heights are retained through typed computed styles, so smaller labels keep their original text alignment instead of inheriting a parent's resolved pixel height. Pixel and percentage line heights retain their resolved lengths. Engines without typed computed styles use the existing pixel snapshot fallback.
 
 This is not a universal guarantee of identical rendering. Every capture carries notes about website JavaScript and rendering context. Additional notes identify inaccessible stylesheets, missing assets, external state triggers, shadow content, unresolved variables, nested CSS, SVG declarative animation, and canvas content.
 
